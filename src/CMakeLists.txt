@@ -30,7 +30,7 @@ include( ${CGAL_USE_FILE} )
 
 if(CGAL_FOUND AND CGAL_Qt5_FOUND AND Qt5_FOUND)
 
-  qt5_wrap_ui( UI_FILES Main_window.ui MinAngle_parameters.ui)
+  qt5_wrap_ui( UI_FILES Main_window.ui Isotropic_parameters.ui MinAngle_parameters.ui)
 
   include(AddFileDependencies)
 
@@ -43,6 +43,9 @@ if(CGAL_FOUND AND CGAL_Qt5_FOUND AND Qt5_FOUND)
   qt5_generate_moc( "Scene.h" "${CMAKE_CURRENT_BINARY_DIR}/Scene_moc.cpp" )
   add_file_dependencies( Scene_moc.cpp "${CMAKE_CURRENT_SOURCE_DIR}/Scene.h" )
 
+  qt5_generate_moc( "Isotropic_parameters.h" "${CMAKE_CURRENT_BINARY_DIR}/Isotropic_parameters_moc.cpp" )
+  add_file_dependencies( Isotropic_parameters_moc.cpp "${CMAKE_CURRENT_SOURCE_DIR}/Isotropic_parameters.h" )
+
   qt5_generate_moc( "MinAngle_parameters.h" "${CMAKE_CURRENT_BINARY_DIR}/MinAngle_parameters_moc.cpp" )
   add_file_dependencies( MinAngle_parameters_moc.cpp "${CMAKE_CURRENT_SOURCE_DIR}/MinAngle_parameters.h" )
 
@@ -51,6 +54,7 @@ if(CGAL_FOUND AND CGAL_Qt5_FOUND AND Qt5_FOUND)
   add_file_dependencies( CGAL_remeshing.cpp "${CMAKE_CURRENT_BINARY_DIR}/Main_window_moc.cpp"
                                        "${CMAKE_CURRENT_BINARY_DIR}/Viewer_moc.cpp"
                                        "${CMAKE_CURRENT_BINARY_DIR}/Scene_moc.cpp" 
+	                       "${CMAKE_CURRENT_BINARY_DIR}/Isotropic_parameters_moc.cpp"
 		       "${CMAKE_CURRENT_BINARY_DIR}/MinAngle_parameters_moc.cpp")
 
   add_executable  ( CGALRemeshing CGAL_remeshing.cpp ${UI_FILES} ${CGAL_Qt5_RESOURCE_FILES} 
