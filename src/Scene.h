@@ -290,17 +290,6 @@ class Scene : public QObject {
   void initialize_buffers();                      // initialize buffers
   void changed();                                 // compute elements
   void compute_elements();
-  void compute_faces(const Mesh &mesh, bool is_input, std::vector<float> *pos, 
-                     std::vector<float> *normals, std::vector<float> *colors);
-  void compute_edges(const Mesh &mesh, std::vector<float> *pos);
-  void compute_face(const Mesh &mesh, bool is_input, face_descriptor fh, 
-                    std::vector<float> *pos, std::vector<float> *normals, 
-                    std::vector<float> *colors);
-  void compute_edge(const Mesh &mesh, edge_descriptor eh, 
-                    std::vector<float> *pos);
-  void inline compute_point(const Point &point, std::vector<float> *pos);
-  void inline compute_normal(const Vector_3 &normal, std::vector<float> *pos);
-  void inline compute_color(const Color &color, std::vector<float> *pos);
   void set_draw_render_types(DrawType draw_type, RenderType render_type);
   void reset_draw_render_types();
   // 2) opeartions
@@ -317,14 +306,14 @@ class Scene : public QObject {
   bool are_buffers_initialized;
   // 1.2) member data
   Mesh *m_pSurfacemeshInput, *m_pSurfacemeshRemesh;       // Surface_mesh
-  Mesh::Property_map<face_descriptor, Vector_3> m_input_fnormals;
-  Mesh::Property_map<face_descriptor, Vector_3> m_remesh_fnormals;
   Polyhedron *m_pPolyhedronInput, *m_pPolyhedronRemesh;   // Polyhedron_3
   Old_remesh<Kernel, Polyhedron> old_remesh;
   Facet_tree m_input_facet_tree, m_remesh_facet_tree;
 
   // test
-  PMP::Minangle_remesh<Kernel> minangle_remesh;
+  //PMP::Minangle_remesh<Kernel> m_minangle_remesh;
+  PMP::internal::Minangle_remesher<Kernel> *m_minangle_remesher;
+  //PMP::internal::Mesh_properties<Kernel> m_input_properties, m_remesh_properties;
 
   // 1.3) parameter settings
   double m_target_edge_length;

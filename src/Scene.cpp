@@ -49,6 +49,7 @@ Scene::Scene()
   // 4) parameters initialization
   m_target_edge_length = 0.2;
   m_smooth_iteration_count = 3;
+  m_minangle_remesher = NULL;
 }
 
 Scene::~Scene() {
@@ -78,6 +79,10 @@ Scene::~Scene() {
   if (m_pPolyhedronRemesh != NULL) {
     delete m_pPolyhedronRemesh;
     m_pPolyhedronRemesh = NULL;
+  }
+  if (m_minangle_remesher != NULL) {
+    delete m_minangle_remesher;
+    m_minangle_remesher = NULL;
   }
 }
 
@@ -1321,17 +1326,17 @@ void Scene::changed() {
 void Scene::compute_elements() {
   if (m_view_surfacemesh_input && m_pSurfacemeshInput != NULL) {
     // step 1: compute the facets
-    compute_faces(*m_pSurfacemeshInput, true, &pos_sinput_faces, 
-                  &pos_sinput_face_normals, &pos_sinput_face_colors);
+    m_minangle_remesher->compute_faces(true, &pos_sinput_faces,
+        &pos_sinput_face_normals, &pos_sinput_face_colors);
     // step 2: compute the edges
-    compute_edges(*m_pSurfacemeshInput, &pos_sinput_edges);
+    m_minangle_remesher->compute_edges(true, &pos_sinput_edges);
   }
   if (m_view_surfacemesh_remesh && m_pSurfacemeshRemesh != NULL) {
     // step 1: compute the facets
-    compute_faces(*m_pSurfacemeshRemesh, false, &pos_sremesh_faces, 
-                  &pos_sremesh_face_normals, &pos_sremesh_face_colors);
+    m_minangle_remesher->compute_faces(false, &pos_sremesh_faces,
+        &pos_sremesh_face_normals, &pos_sremesh_face_colors);
     // step 2: compute the edges
-    compute_edges(*m_pSurfacemeshRemesh, &pos_sremesh_edges);
+    m_minangle_remesher->compute_edges(false, &pos_sremesh_edges);
   }
   if (m_view_polyhedron_input && m_pPolyhedronInput != NULL) {
     // step 1: compute the facets
@@ -1438,7 +1443,7 @@ void Scene::compute_elements() {
 
 bool Scene::open(QString file_name, bool is_surface_mesh) {
   QTextStream cerr(stderr);
-  cerr << QString("Opening file \"%1\"\n").arg(file_name);
+  cerr << QString("\nOpening file \"%1\"\n").arg(file_name);
   cerr.flush();
 
   QFileInfo file_info(file_name);
@@ -1467,20 +1472,11 @@ bool Scene::open(QString file_name, bool is_surface_mesh) {
     in.close();
     // TODO: do we need the normalization?
     // m_pPolyhedronInput->normalize(1.0);
-    m_input_fnormals = m_pSurfacemeshInput->add_property_map
-      <face_descriptor, Vector_3>("f:normals", CGAL::NULL_VECTOR).first;
-    CGAL::Polygon_mesh_processing::compute_face_normals(*m_pSurfacemeshInput, 
-      m_input_fnormals, 
-      CGAL::Polygon_mesh_processing::parameters::vertex_point_map(
-      m_pSurfacemeshInput->points()).geom_traits(Kernel()));
-    update_bbox();
     m_pSurfacemeshRemesh = new Mesh(*m_pSurfacemeshInput);
-    m_remesh_fnormals = m_pSurfacemeshRemesh->add_property_map
-      <face_descriptor, Vector_3>("f:normals", CGAL::NULL_VECTOR).first;
-    CGAL::Polygon_mesh_processing::compute_face_normals(*m_pSurfacemeshRemesh,
-      m_remesh_fnormals,
-      CGAL::Polygon_mesh_processing::parameters::vertex_point_map(
-      m_pSurfacemeshRemesh->points()).geom_traits(Kernel()));
+    update_bbox();
+    m_minangle_remesher =new PMP::internal::Minangle_remesher<Kernel>(
+        *m_pSurfacemeshInput, *m_pSurfacemeshRemesh);
+    m_minangle_remesher->calculate_normals(true, true);
     double average_length = calculate_average_length(*m_pSurfacemeshRemesh);
     if (average_length > 0.0) {
       m_target_edge_length = average_length;
@@ -1491,17 +1487,12 @@ bool Scene::open(QString file_name, bool is_surface_mesh) {
     m_view_polyhedron_input = false;
     m_view_polyhedron_remesh = false;
 
+
+    
     // test
-    /*std::cout << "remesh normals:" << std::endl;
-    for (face_descriptor fd : faces(*m_pSurfacemeshRemesh)) {
-    std::cout << "normal info: " << m_remesh_fnormals[fd] << std::endl;
-    }
-    std::cout << "vertex points: " << std::endl;
-    Mesh::Property_map<vertex_descriptor, Point> location = m_pSurfacemeshRemesh->points();
-    Bbox bb;
-    BOOST_FOREACH(vertex_descriptor vd, m_pSurfacemeshRemesh->vertices()) {
-    std::cout << "vertex info: " << location[vd] << std::endl;
-    }*/
+    m_minangle_remesher->test();
+
+
   }
   else {                        // open Polyhedron_3
     if (m_pPolyhedronInput != NULL) {
@@ -1539,7 +1530,7 @@ bool Scene::open(QString file_name, bool is_surface_mesh) {
 
 bool Scene::open_input(QString file_name, bool is_surface_mesh) {
   QTextStream cerr(stderr);
-  cerr << QString("Opening input file \"%1\"\n").arg(file_name);
+  cerr << QString("\nOpening input file \"%1\"\n").arg(file_name);
   cerr.flush();
 
   QFileInfo fileinfo(file_name);
@@ -1585,7 +1576,7 @@ bool Scene::open_input(QString file_name, bool is_surface_mesh) {
 
 bool Scene::open_remesh(QString file_name, bool is_surface_mesh) {
   QTextStream cerr(stderr);
-  cerr << QString("Opening remesh file \"%1\"\n").arg(file_name);
+  cerr << QString("\nOpening remesh file \"%1\"\n").arg(file_name);
   cerr.flush();
 
   QFileInfo fileinfo(file_name);
@@ -1995,10 +1986,7 @@ void Scene::split_border() {
         boost::make_function_output_iterator(halfedge2edge(
         *m_pSurfacemeshRemesh, border)));
     PMP::split_long_edges(border, m_target_edge_length, *m_pSurfacemeshRemesh);
-    CGAL::Polygon_mesh_processing::compute_face_normals(*m_pSurfacemeshRemesh,
-      m_remesh_fnormals,
-      CGAL::Polygon_mesh_processing::parameters::vertex_point_map(
-      m_pSurfacemeshRemesh->points()).geom_traits(Kernel()));
+    m_minangle_remesher->calculate_normals(false, true);
     std::cout << "Done (" << timer.time() << " s)" << std::endl;
     reset_draw_render_types();
     changed();
@@ -2020,11 +2008,7 @@ void Scene::isotropic_remeshing() {
       PMP::parameters::number_of_iterations(m_smooth_iteration_count)
       .protect_constraints(true)//i.e. protect border, here
       );
-    CGAL::Polygon_mesh_processing::compute_face_normals(
-      *m_pSurfacemeshRemesh,
-      m_remesh_fnormals,
-      CGAL::Polygon_mesh_processing::parameters::vertex_point_map(
-      m_pSurfacemeshRemesh->points()).geom_traits(Kernel()));
+    m_minangle_remesher->calculate_normals(false, true);
     std::cout << "Done (" << timer.time() << " s)" << std::endl;
     reset_draw_render_types();
     changed();
@@ -2237,74 +2221,3 @@ double Scene::calculate_average_length(const Mesh &mesh) const {
   }
 }
 
-void Scene::compute_faces(const Mesh &mesh, bool is_input, 
-                          std::vector<float> *pos, std::vector<float> *normals,
-                          std::vector<float> *colors) {
-  pos->clear();
-  normals->clear();
-  colors->clear();
-  for (Mesh::Face_range::iterator f = mesh.faces().begin(); 
-      f != mesh.faces().end(); ++f) {
-    if (*f != boost::graph_traits<Mesh>::null_face()) {
-      compute_face(mesh, is_input, *f, pos, normals, colors);
-    }
-  }
-}
-
-void Scene::compute_edges(const Mesh &mesh, std::vector<float> *pos) {
-  pos->clear();
-  for (Mesh::Edge_range::iterator e = mesh.edges().begin(); 
-      e != mesh.edges().end(); ++e) {
-    compute_edge(mesh, *e, pos);
-  }
-}
-
-void Scene::compute_face(const Mesh &mesh, bool is_input, face_descriptor fh,
-    std::vector<float> *pos, std::vector<float> *normals, 
-    std::vector<float> *colors) {
-  Color color;
-  Vector_3 normal;
-  if (is_input) {
-    color = Color(150, 150, 200);
-    normal = m_input_fnormals[fh];
-  }
-  else {
-    color = Color(200, 150, 150);
-    normal = m_remesh_fnormals[fh];
-  }
-  halfedge_descriptor hd = mesh.halfedge(fh);
-  do {
-    const Point &point = mesh.point(mesh.source(hd));
-    compute_point(point, pos);
-    compute_normal(normal, normals);
-    compute_color(color, colors);
-    hd = mesh.next(hd);
-  } while (hd != mesh.halfedge(fh));
-}
-
-void Scene::compute_edge(const Mesh &mesh, edge_descriptor ef,
-                         std::vector<float> *pos) {
-  const Point &source = mesh.point(mesh.source(mesh.halfedge(ef)));
-  const Point &target = mesh.point(mesh.target(mesh.halfedge(ef)));
-  compute_point(source, pos);
-  compute_point(target, pos);
-}
-
-void inline Scene::compute_point(const Point &point, std::vector<float> *pos) {
-  pos->push_back(point.x());
-  pos->push_back(point.y());
-  pos->push_back(point.z());
-}
-
-void inline Scene::compute_normal(const Vector_3 &normal, 
-                                  std::vector<float> *pos) {
-  pos->push_back(normal.x());
-  pos->push_back(normal.y());
-  pos->push_back(normal.z());
-}
-
-void inline Scene::compute_color(const Color &color, std::vector<float> *pos) {
-  pos->push_back(color.red() / 255.0f);
-  pos->push_back(color.green() / 255.0f);
-  pos->push_back(color.blue() / 255.0f);
-}

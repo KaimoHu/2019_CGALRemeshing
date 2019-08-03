@@ -12,7 +12,6 @@ public:
   // typedef typenames
   typedef typename internal::Minangle_remesher<Kernel> Minangle_remesher;
   typedef typename Minangle_remesher::FT FT;
-  typedef typename Minangle_remesher::Surface_mesh Surface_mesh;
 
   // life cycle
   Minangle_remesh() {
@@ -59,58 +58,55 @@ public:
     OptimizeType vertex_optimize_type,
     bool optimize_after_local_operations) {
     // general parameters
-    minangle_remesher.set_max_error_threshold(max_error_threshold);
-    minangle_remesher.set_min_angle_threshold(min_angle_threshold);
-    minangle_remesher.set_max_mesh_complexity(max_mesh_complexity);
-    minangle_remesher.set_smooth_angle_delta(smooth_angle_delta);
-    minangle_remesher.set_apply_edge_flip(apply_edge_flip);
-    minangle_remesher.set_edge_flip_strategy(edge_flip_strategy);
-    minangle_remesher.set_flip_after_split_and_collapse(flip_after_split_and_collapse);
-    minangle_remesher.set_relocate_after_local_operations(relocate_after_local_operations);
-    minangle_remesher.set_relocate_strategy(relocate_strategy);
-    minangle_remesher.set_keep_vertex_in_one_ring(keep_vertex_in_one_ring);
-    minangle_remesher.set_use_local_aabb_tree(use_local_aabb_tree);
-    minangle_remesher.set_collapsed_list_size(collapse_list_size);
-    minangle_remesher.set_decrease_max_errors(decrease_max_errors);
-    minangle_remesher.set_verbose_progress(verbose_progress);
-    minangle_remesher.set_apply_initial_mesh_simplification(apply_initial_mesh_simplification);
-    minangle_remesher.set_apply_final_vertex_relocation(apply_final_vertex_relocation);
+    minangle_remesher_.set_max_error_threshold(max_error_threshold);
+    minangle_remesher_.set_min_angle_threshold(min_angle_threshold);
+    minangle_remesher_.set_max_mesh_complexity(max_mesh_complexity);
+    minangle_remesher_.set_smooth_angle_delta(smooth_angle_delta);
+    minangle_remesher_.set_apply_edge_flip(apply_edge_flip);
+    minangle_remesher_.set_edge_flip_strategy(edge_flip_strategy);
+    minangle_remesher_.set_flip_after_split_and_collapse(flip_after_split_and_collapse);
+    minangle_remesher_.set_relocate_after_local_operations(relocate_after_local_operations);
+    minangle_remesher_.set_relocate_strategy(relocate_strategy);
+    minangle_remesher_.set_keep_vertex_in_one_ring(keep_vertex_in_one_ring);
+    minangle_remesher_.set_use_local_aabb_tree(use_local_aabb_tree);
+    minangle_remesher_.set_collapsed_list_size(collapse_list_size);
+    minangle_remesher_.set_decrease_max_errors(decrease_max_errors);
+    minangle_remesher_.set_verbose_progress(verbose_progress);
+    minangle_remesher_.set_apply_initial_mesh_simplification(apply_initial_mesh_simplification);
+    minangle_remesher_.set_apply_final_vertex_relocation(apply_final_vertex_relocation);
     // sample parameters
-    minangle_remesher.set_samples_per_facet_in(samples_per_facet_in);               
-    minangle_remesher.set_samples_per_facet_out(samples_per_facet_out);
-    minangle_remesher.set_max_samples_per_area(max_samples_per_area);
-    minangle_remesher.set_min_samples_per_triangle(min_samples_per_triangle);
-    minangle_remesher.set_bvd_iteration_count(bvd_iteration_count);
-    minangle_remesher.set_sample_number_strategy(sample_number_strategy);
-    minangle_remesher.set_sample_strategy(sample_strategy);
-    minangle_remesher.set_use_stratified_sampling(use_stratified_sampling);
+    minangle_remesher_.set_samples_per_facet_in(samples_per_facet_in);
+    minangle_remesher_.set_samples_per_facet_out(samples_per_facet_out);
+    minangle_remesher_.set_max_samples_per_area(max_samples_per_area);
+    minangle_remesher_.set_min_samples_per_triangle(min_samples_per_triangle);
+    minangle_remesher_.set_bvd_iteration_count(bvd_iteration_count);
+    minangle_remesher_.set_sample_number_strategy(sample_number_strategy);
+    minangle_remesher_.set_sample_strategy(sample_strategy);
+    minangle_remesher_.set_use_stratified_sampling(use_stratified_sampling);
     // feature intensity parameters
-    minangle_remesher.set_sum_theta(sum_theta);
-    minangle_remesher.set_sum_delta(sum_delta);
-    minangle_remesher.set_dihedral_theta(dihedral_theta);
-    minangle_remesher.set_dihedral_delta(dihedral_delta);
-    minangle_remesher.set_feature_difference_delta(feature_difference_delta);
-    minangle_remesher.set_feature_control_delta(feature_control_delta);
-    minangle_remesher.set_inherit_element_types(inherit_element_types);
-    minangle_remesher.set_use_feature_intensity_weights(use_feature_intensity_weights);
+    minangle_remesher_.set_sum_theta(sum_theta);
+    minangle_remesher_.set_sum_delta(sum_delta);
+    minangle_remesher_.set_dihedral_theta(dihedral_theta);
+    minangle_remesher_.set_dihedral_delta(dihedral_delta);
+    minangle_remesher_.set_feature_difference_delta(feature_difference_delta);
+    minangle_remesher_.set_feature_control_delta(feature_control_delta);
+    minangle_remesher_.set_inherit_element_types(inherit_element_types);
+    minangle_remesher_.set_use_feature_intensity_weights(use_feature_intensity_weights);
       // vertex optimization parameters
-    minangle_remesher.set_vertex_optimize_count(vertex_optimize_count);
-    minangle_remesher.set_vertex_optimize_ratio(vertex_optimize_ratio);
-    minangle_remesher.set_stencil_ring_size(stencil_ring_size);
-    minangle_remesher.set_optimize_strategy(optimize_strategy);
-    minangle_remesher.set_facet_optimize_type(facet_optimize_type);
-    minangle_remesher.set_edge_optimize_type(edge_optimize_type);
-    minangle_remesher.set_vertex_optimize_type(vertex_optimize_type);
-    minangle_remesher.set_optimize_after_local_operations(optimize_after_local_operations);
+    minangle_remesher_.set_vertex_optimize_count(vertex_optimize_count);
+    minangle_remesher_.set_vertex_optimize_ratio(vertex_optimize_ratio);
+    minangle_remesher_.set_stencil_ring_size(stencil_ring_size);
+    minangle_remesher_.set_optimize_strategy(optimize_strategy);
+    minangle_remesher_.set_facet_optimize_type(facet_optimize_type);
+    minangle_remesher_.set_edge_optimize_type(edge_optimize_type);
+    minangle_remesher_.set_vertex_optimize_type(vertex_optimize_type);
+    minangle_remesher_.set_optimize_after_local_operations(optimize_after_local_operations);
   }
 
   virtual ~Minangle_remesh() {}
 
-  // TODO: this is a temp function for data access
-  Minangle_remesher& get_minangle_remesher() { return minangle_remesher; }
-
 private:
-  typename Minangle_remesher minangle_remesher;
+  Minangle_remesher minangle_remesher_;
 };
 
 }

@@ -1,7 +1,7 @@
 #ifndef CGAL_MINANGLE_REMESH_IMPL_H
 #define CGAL_MINANGLE_REMESH_IMPL_H
 
-#include "enriched_surface_mesh.h"
+#include "mesh_properties.h"
 
 // enumeration data (put outside the namespace so that others can use)
 enum SampleNumberStrategy {
@@ -49,66 +49,72 @@ namespace internal {
 template<typename Kernel>
 class Minangle_remesher {
 public:
-  // types
-  typedef typename Surface_mesh_properties<Kernel> Surface_mesh_properties;
-  typedef typename Surface_mesh_properties::FT FT;
-  typedef typename Surface_mesh_properties::Point Point;
-  typedef typename Surface_mesh_properties::Surface_mesh Surface_mesh;
-  typedef typename Surface_mesh_properties::Point_comp Point_comp;
+  // type definitions
+  typedef typename Mesh_properties<Kernel> Mesh_properties;
+  typedef typename Mesh_properties::FT FT;
+  typedef typename Mesh_properties::Point Point;
+  typedef typename Mesh_properties::Mesh Mesh;
+  typedef typename Mesh_properties::halfedge_descriptor halfedge_descriptor;
+  typedef typename Mesh_properties::edge_descriptor edge_descriptor;
+  typedef typename Mesh_properties::vertex_descriptor vertex_descriptor;
+  typedef typename Mesh_properties::face_descriptor face_descriptor;
 
-  // visit list and iterator
-  typedef typename std::list<std::pair<Point, FT>> Visit_list;
+  typedef typename Mesh_properties::Point_comp Point_comp;
+  typedef typename std::list<std::pair<Point, FT>> Visit_list;  // visit list and iterator
   typedef typename std::list<std::pair<Point, FT>>::iterator Visit_iter;
 
 public:
   // 1) life cycles
-  Minangle_remesher() {
+  Minangle_remesher(Mesh &input, Mesh &remesh) {
     // general paramters
-    m_max_error_threshold = 0.2;          
-    m_min_angle_threshold = 30.0;
-    m_max_mesh_complexity = 100000000;
-    m_smooth_angle_delta = 0.1;
-    m_apply_edge_flip = true;
-    m_edge_flip_strategy = EdgeFlipStrategy::k_improve_angle;
-    m_flip_after_split_and_collapse = true;
-    m_relocate_after_local_operations = true;
-    m_relocate_strategy = RelocateStrategy::k_cvt_barycenter;
-    m_keep_vertex_in_one_ring = false;
-    m_use_local_aabb_tree = true;
-    m_collapsed_list_size = 10;
-    m_decrease_max_errors = true;
-    m_verbose_progress = true;
-    m_apply_initial_mesh_simplification = true;
-    m_apply_final_vertex_relocation = true;
+    max_error_threshold_ = 0.2;          
+    min_angle_threshold_ = 30.0;
+    max_mesh_complexity_ = 100000000;
+    smooth_angle_delta_ = 0.1;
+    apply_edge_flip_ = true;
+    edge_flip_strategy_ = EdgeFlipStrategy::k_improve_angle;
+    flip_after_split_and_collapse_ = true;
+    relocate_after_local_operations_ = true;
+    relocate_strategy_ = RelocateStrategy::k_cvt_barycenter;
+    keep_vertex_in_one_ring_ = false;
+    use_local_aabb_tree_ = true;
+    collapse_list_size_ = 10;
+    decrease_max_errors_ = true;
+    verbose_progress_ = true;
+    apply_initial_mesh_simplification_ = true;
+    apply_final_vertex_relocation_ = true;
     // sample parameters
-    m_samples_per_facet_in = 10;          
-    m_samples_per_facet_out = 10;
-    m_max_samples_per_area = 10000;
-    m_min_samples_per_triangle = 1;
-    m_bvd_iteration_count = 1;
-    m_sample_number_strategy = SampleNumberStrategy::k_fixed;
-    m_sample_strategy = SampleStrategy::k_adaptive;
-    m_use_stratified_sampling = false;
+    samples_per_facet_in_ = 10;          
+    samples_per_facet_out_ = 10;
+    max_samples_per_area_ = 10000;
+    min_samples_per_triangle_ = 1;
+    bvd_iteration_count_ = 1;
+    sample_number_strategy_ = SampleNumberStrategy::k_fixed;
+    sample_strategy_ = SampleStrategy::k_adaptive;
+    use_stratified_sampling_ = false;
     // feature parameters
-    m_sum_theta = 1.0;                    
-    m_sum_delta = 0.5;
-    m_dihedral_theta = 1.0;
-    m_dihedral_delta = 0.5;
-    m_feature_difference_delta = 0.15;
-    m_feature_control_delta = 0.5;
-    m_inherit_element_types = false;
-    m_use_feature_intensity_weights = false;
+    sum_theta_ = 1.0;                    
+    sum_delta_ = 0.5;
+    dihedral_theta_ = 1.0;
+    dihedral_delta_ = 0.5;
+    feature_difference_delta_ = 0.15;
+    feature_control_delta_ = 0.5;
+    inherit_element_types_ = false;
+    use_feature_intensity_weights_ = false;
     // vertex optimization parameters
-    m_vertex_optimize_count = 2;          
-    m_vertex_optimize_ratio = 0.9;
-    m_stencil_ring_size = 1;
-    m_optimize_strategy = OptimizeStrategy::k_approximation;
-    m_facet_optimize_type = OptimizeType::k_both;
-    m_edge_optimize_type = OptimizeType::k_both;
-    m_vertex_optimize_type = OptimizeType::k_both;
-    m_optimize_after_local_operations = true;
+    vertex_optimize_count_ = 2;          
+    vertex_optimize_ratio_ = 0.9;
+    stencil_ring_size_ = 1;
+    optimize_strategy_ = OptimizeStrategy::k_approximation;
+    facet_optimize_type_ = OptimizeType::k_both;
+    edge_optimize_type_ = OptimizeType::k_both;
+    vertex_optimize_type_ = OptimizeType::k_both;
+    optimize_after_local_operations_ = true;
 
     initialize_private_data();
+
+    input_properties_ = new Mesh_properties(input);
+    remesh_properties_ = new Mesh_properties(remesh);
   }
 
   Minangle_remesher(FT max_error_threshold,  // general parameters
@@ -150,194 +156,260 @@ public:
     OptimizeType facet_optimize_type,
     OptimizeType edge_optimize_type,
     OptimizeType vertex_optimize_type,
-    bool optimize_after_local_operations) 
-  : m_max_error_threshold(max_error_threshold),
-    m_min_angle_threshold(min_angle_threshold),
-    m_max_mesh_complexity(max_mesh_complexity),
-    m_smooth_angle_delta(smooth_angle_delta),
-    m_apply_edge_flip(apply_edge_flip),
-    m_edge_flip_strategy(edge_flip_strategy),
-    m_flip_after_split_and_collapse(flip_after_split_and_collapse),
-    m_relocate_after_local_operations(relocate_after_local_operations),
-    m_relocate_strategy(relocate_strategy),
-    m_keep_vertex_in_one_ring(keep_vertex_in_one_ring),
-    m_use_local_aabb_tree(use_local_aabb_tree),
-    m_collapse_list_size(collapse_list_size),
-    m_decrease_max_errors(decrease_max_errors),
-    m_verbose_progress(verbose_progress),
-    m_apply_initial_mesh_simplificaiton(apply_initial_mesh_simplification),
-    m_apply_final_vertex_relocation(apply_final_vertex_relocation),
-    m_samples_per_facet_in(samples_per_facet_in),
-    m_samples_per_facet_out(samples_per_facet_out),
-    m_max_samples_per_area(max_samples_per_area),
-    m_min_samples_per_triangle(min_samples_per_triangle),
-    m_bvd_iteration_count(bvd_iteration_count),
-    m_sample_number_strategy(sample_number_strategy),
-    m_sample_strategy(sample_strategy),
-    m_use_stratified_sampling(use_stratified_sampling),
-    m_sum_theta(sum_theta),
-    m_sum_delta(sum_delta),
-    m_dihedral_theta(dihedral_theta),
-    m_dihedral_delta(dihedral_delta),
-    m_feature_difference_delta(feature_difference_delta),
-    m_feature_control_delta(feature_control_delta),
-    m_inherit_element_types(inherit_element_types),
-    m_use_feature_intensity_weights(use_feature_intensity_weights),
-    m_vertex_optimize_count(vertex_optimize_count),
-    m_vertex_optimize_ratio(vertex_optimize_ratio),
-    m_stencil_ring_size(stencil_ring_size),
-    m_optimize_strategy(optimize_strategy),
-    m_facet_optimize_type(facet_optimize_type),
-    m_edge_optimize_type(edge_optimize_type),
-    m_vertex_optimize_type(vertex_optimize_type),
-    m_optimize_after_local_operations(optimize_after_local_operations) {
+    bool optimize_after_local_operations,
+    Mesh &input, 
+    Mesh &remesh)
+  : max_error_threshold_(max_error_threshold),
+    min_angle_threshold_(min_angle_threshold),
+    max_mesh_complexity_(max_mesh_complexity),
+    smooth_angle_delta_(smooth_angle_delta),
+    apply_edge_flip_(apply_edge_flip),
+    edge_flip_strategy_(edge_flip_strategy),
+    flip_after_split_and_collapse_(flip_after_split_and_collapse),
+    relocate_after_local_operations_(relocate_after_local_operations),
+    relocate_strategy_(relocate_strategy),
+    keep_vertex_in_one_ring_(keep_vertex_in_one_ring),
+    use_local_aabb_tree_(use_local_aabb_tree),
+    collapse_list_size_(collapse_list_size),
+    decrease_max_errors_(decrease_max_errors),
+    verbose_progress_(verbose_progress),
+    apply_initial_mesh_simplification_(apply_initial_mesh_simplification),
+    apply_final_vertex_relocation_(apply_final_vertex_relocation),
+    samples_per_facet_in_(samples_per_facet_in),
+    samples_per_facet_out_(samples_per_facet_out),
+    max_samples_per_area_(max_samples_per_area),
+    min_samples_per_triangle_(min_samples_per_triangle),
+    bvd_iteration_count_(bvd_iteration_count),
+    sample_number_strategy_(sample_number_strategy),
+    sample_strategy_(sample_strategy),
+    use_stratified_sampling_(use_stratified_sampling),
+    sum_theta_(sum_theta),
+    sum_delta_(sum_delta),
+    dihedral_theta_(dihedral_theta),
+    dihedral_delta_(dihedral_delta),
+    feature_difference_delta_(feature_difference_delta),
+    feature_control_delta_(feature_control_delta),
+    inherit_element_types_(inherit_element_types),
+    use_feature_intensity_weights_(use_feature_intensity_weights),
+    vertex_optimize_count_(vertex_optimize_count),
+    vertex_optimize_ratio_(vertex_optimize_ratio),
+    stencil_ring_size_(stencil_ring_size),
+    optimize_strategy_(optimize_strategy),
+    facet_optimize_type_(facet_optimize_type),
+    edge_optimize_type_(edge_optimize_type),
+    vertex_optimize_type_(vertex_optimize_type),
+    optimize_after_local_operations_(optimize_after_local_operations) {
     initialize_private_data();
+    input_properties_ = new Mesh_properties(input);
+    remesh_properties_ = new Mesh_properties(remesh);
   }
 
-  virtual ~Minangle_remesher() {}
+  virtual ~Minangle_remesher() {
+    delete input_properties_;
+    delete remesh_properties_;
+  }
 
-  // parameter access functions
-  // general parameters
-  FT get_max_error_threshold() const { return m_max_error_threshold; }
-  void set_max_error_threshold(FT value) { m_max_error_threshold = value; }
-  FT get_min_angle_threshold() const { return m_min_angle_threshold; }
-  void set_min_angle_threshold(FT value) { m_min_angle_threshold = value; }
-  int get_max_mesh_complexity() const { return m_max_mesh_complexity; }
-  void set_max_mesh_complexity(int value) { m_max_mesh_complexity = value; }
-  FT get_smooth_angle_delta() const { return m_smooth_angle_delta; }
-  void set_smooth_angle_delta(FT value) { m_smooth_angle_delta = value; }
-  bool get_apply_edge_flip() const { return m_apply_edge_flip; }
-  void set_apply_edge_flip(bool value) { m_apply_edge_flip = value; }
-  EdgeFlipStrategy get_edge_flip_strategy() const { return m_edge_flip_strategy; }
-  void set_edge_flip_strategy(EdgeFlipStrategy value) { m_edge_flip_strategy = value; }
-  bool get_flip_after_split_and_collapse() const { return m_flip_after_split_and_collapse; }
-  void set_flip_after_split_and_collapse(bool value) { m_flip_after_split_and_collapse = value; }
-  bool get_relocate_after_local_operations() const { return m_relocate_after_local_operations; }
-  void set_relocate_after_local_operations(bool value) { m_relocate_after_local_operations = value; }
-  RelocateStrategy get_relocate_strategy() const { return m_relocate_strategy; }
-  void set_relocate_strategy(RelocateStrategy value) { m_relocate_strategy = value; }
-  bool get_keep_vertex_in_one_ring() const { return m_keep_vertex_in_one_ring; }
-  void set_keep_vertex_in_one_ring(bool value) { m_keep_vertex_in_one_ring = value; }
-  bool get_use_local_aabb_tree() const { return m_use_local_aabb_tree; }
-  void set_use_local_aabb_tree(bool value) { m_use_local_aabb_tree = value; }
-  int get_collapsed_list_size() const { return m_collapsed_list_size; }
-  void set_collapsed_list_size(int value) { m_collapsed_list_size = value; }
-  bool get_decrease_max_errors() const { return m_decrease_max_errors; }
-  void set_decrease_max_errors(bool value) { m_decrease_max_errors = value; }
-  bool get_verbose_progress() const { return m_verbose_progress; }
-  void set_verbose_progress(bool value) { m_verbose_progress = value; }
-  bool get_apply_initial_mesh_simplification() const { return m_apply_initial_mesh_simplification; }
-  void set_apply_initial_mesh_simplification(bool value) { m_apply_initial_mesh_simplification = value; }
-  bool get_apply_final_vertex_relocation() const { return m_apply_final_vertex_relocation; }
-  void set_apply_final_vertex_relocation(bool value) { m_apply_final_vertex_relocation = value; }
-  // sample parameters
-  int get_samples_per_facet_in() const { return m_samples_per_facet_in; }
-  void set_samples_per_facet_in(int value) { m_samples_per_facet_in = value; }
-  int get_samples_per_facet_out() const { return m_samples_per_facet_out; }
-  void set_samples_per_facet_out(int value) { m_samples_per_facet_out = value; }
-  int get_max_samples_per_area() const { return m_max_samples_per_area; }
-  void set_max_samples_per_area(int value) { m_max_samples_per_area = value; }
-  int get_min_samples_per_triangle() const { return m_min_samples_per_triangle; }
-  void set_min_samples_per_triangle(int value) { m_min_samples_per_triangle = value; }
-  int get_bvd_iteration_count() const { return m_bvd_iteration_count; }
-  void set_bvd_iteration_count(int value) { m_bvd_iteration_count = value; }
-  SampleNumberStrategy get_sample_number_strategy() const { return m_sample_number_strategy; }
-  void set_sample_number_strategy(SampleNumberStrategy value) { m_sample_number_strategy = value; }
-  SampleStrategy get_sample_strategy() const { return m_sample_strategy; }
-  void set_sample_strategy(SampleStrategy value) { m_sample_strategy = value; }
-  bool get_use_stratified_sampling() const { return m_use_stratified_sampling; }
-  void set_use_stratified_sampling(bool value) { m_use_stratified_sampling = value; }
-  // feature intensity parameters
-  FT get_sum_theta() const { return m_sum_theta; }
-  void set_sum_theta(FT value) { m_sum_theta = value; }
-  FT get_sum_delta() const { return m_sum_delta; }
-  void set_sum_delta(FT value) { m_sum_delta = value; }
-  FT get_dihedral_theta() const { return m_dihedral_theta; }
-  void set_dihedral_theta(FT value) { m_dihedral_theta = value; }
-  FT get_dihedral_delta() const { return m_dihedral_delta; }
-  void set_dihedral_delta(FT value) { m_dihedral_delta = value; }
-  FT get_feature_difference_delta() const { return m_feature_difference_delta; }
-  void set_feature_difference_delta(FT value) { m_feature_difference_delta = value; }
-  FT get_feature_control_delta() const { return m_feature_control_delta; }
-  void set_feature_control_delta(FT value) { m_feature_control_delta = value; }
-  bool get_inherit_element_types() const { return m_inherit_element_types; }
-  void set_inherit_element_types(bool value) { m_inherit_element_types = value; }
-  bool get_use_feature_intensity_weights() const { return m_use_feature_intensity_weights; }
-  void set_use_feature_intensity_weights(bool value) { m_use_feature_intensity_weights = value; }
-  // vertex optimization parameters
-  int get_vertex_optimize_count() const { return m_vertex_optimize_count; }
-  void set_vertex_optimize_count(int value) { m_vertex_optimize_count = value; }
-  FT get_vertex_optimize_ratio() const { return m_vertex_optimize_ratio; }
-  void set_vertex_optimize_ratio(FT value) { m_vertex_optimize_ratio = value; }
-  int get_stencil_ring_size() const { return m_stencil_ring_size; }
-  void set_stencil_ring_size(int value) { m_stencil_ring_size = value; }
-  OptimizeStrategy get_optimize_strategy() const{ return m_optimize_strategy;}
-  void set_optimize_strategy(OptimizeStrategy value) { m_optimize_strategy = value; }
-  OptimizeType get_facet_optimize_type() const { return m_facet_optimize_type; }
-  void set_facet_optimize_type(OptimizeType value) { m_facet_optimize_type = value; }
-  OptimizeType get_edge_optimize_type() const { return m_edge_optimize_type; }
-  void set_edge_optimize_type(OptimizeType value) { m_edge_optimize_type = value; }
-  OptimizeType get_vertex_optimize_type() const { return m_vertex_optimize_type; }
-  void set_vertex_optimize_type(OptimizeType value) { m_vertex_optimize_type = value; }
-  bool get_optimize_after_local_operations() const { return m_optimize_after_local_operations; }
-  void set_optimize_after_local_operations(bool value) { m_optimize_after_local_operations = value; }
+  // 2) parameter access functions
+  // 2.1) general parameters
+  FT get_max_error_threshold() const { return max_error_threshold_; }
+  void set_max_error_threshold(FT value) { max_error_threshold_ = value; }
+  FT get_min_angle_threshold() const { return min_angle_threshold_; }
+  void set_min_angle_threshold(FT value) { min_angle_threshold_ = value; }
+  int get_max_mesh_complexity() const { return max_mesh_complexity_; }
+  void set_max_mesh_complexity(int value) { max_mesh_complexity_ = value; }
+  FT get_smooth_angle_delta() const { return smooth_angle_delta_; }
+  void set_smooth_angle_delta(FT value) { smooth_angle_delta_ = value; }
+  bool get_apply_edge_flip() const { return apply_edge_flip_; }
+  void set_apply_edge_flip(bool value) { apply_edge_flip_ = value; }
+  EdgeFlipStrategy get_edge_flip_strategy() const { return edge_flip_strategy_; }
+  void set_edge_flip_strategy(EdgeFlipStrategy value) { edge_flip_strategy_ = value; }
+  bool get_flip_after_split_and_collapse() const { return flip_after_split_and_collapse_; }
+  void set_flip_after_split_and_collapse(bool value) { flip_after_split_and_collapse_ = value; }
+  bool get_relocate_after_local_operations() const { return relocate_after_local_operations_; }
+  void set_relocate_after_local_operations(bool value) { relocate_after_local_operations_ = value; }
+  RelocateStrategy get_relocate_strategy() const { return relocate_strategy_; }
+  void set_relocate_strategy(RelocateStrategy value) { relocate_strategy_ = value; }
+  bool get_keep_vertex_in_one_ring() const { return keep_vertex_in_one_ring_; }
+  void set_keep_vertex_in_one_ring(bool value) { keep_vertex_in_one_ring_ = value; }
+  bool get_use_local_aabb_tree() const { return use_local_aabb_tree_; }
+  void set_use_local_aabb_tree(bool value) { use_local_aabb_tree_ = value; }
+  int get_collapsed_list_size() const { return collapse_list_size_; }
+  void set_collapsed_list_size(int value) { collapse_list_size_ = value; }
+  bool get_decrease_max_errors() const { return decrease_max_errors_; }
+  void set_decrease_max_errors(bool value) { decrease_max_errors_ = value; }
+  bool get_verbose_progress() const { return verbose_progress_; }
+  void set_verbose_progress(bool value) { verbose_progress_ = value; }
+  bool get_apply_initial_mesh_simplification() const { return apply_initial_mesh_simplification_; }
+  void set_apply_initial_mesh_simplification(bool value) { apply_initial_mesh_simplification_ = value; }
+  bool get_apply_final_vertex_relocation() const { return apply_final_vertex_relocation_; }
+  void set_apply_final_vertex_relocation(bool value) { apply_final_vertex_relocation_ = value; }
+  // 2.2) sample parameters
+  int get_samples_per_facet_in() const { return samples_per_facet_in_; }
+  void set_samples_per_facet_in(int value) { samples_per_facet_in_ = value; }
+  int get_samples_per_facet_out() const { return samples_per_facet_out_; }
+  void set_samples_per_facet_out(int value) { samples_per_facet_out_ = value; }
+  int get_max_samples_per_area() const { return max_samples_per_area_; }
+  void set_max_samples_per_area(int value) { max_samples_per_area_ = value; }
+  int get_min_samples_per_triangle() const { return min_samples_per_triangle_; }
+  void set_min_samples_per_triangle(int value) { min_samples_per_triangle_ = value; }
+  int get_bvd_iteration_count() const { return bvd_iteration_count_; }
+  void set_bvd_iteration_count(int value) { bvd_iteration_count_ = value; }
+  SampleNumberStrategy get_sample_number_strategy() const { return sample_number_strategy_; }
+  void set_sample_number_strategy(SampleNumberStrategy value) { sample_number_strategy_ = value; }
+  SampleStrategy get_sample_strategy() const { return sample_strategy_; }
+  void set_sample_strategy(SampleStrategy value) { sample_strategy_ = value; }
+  bool get_use_stratified_sampling() const { return use_stratified_sampling_; }
+  void set_use_stratified_sampling(bool value) { use_stratified_sampling_ = value; }
+  // 2.3) feature intensity parameters
+  FT get_sum_theta() const { return sum_theta_; }
+  void set_sum_theta(FT value) { sum_theta_ = value; }
+  FT get_sum_delta() const { return sum_delta_; }
+  void set_sum_delta(FT value) { sum_delta_ = value; }
+  FT get_dihedral_theta() const { return dihedral_theta_; }
+  void set_dihedral_theta(FT value) { dihedral_theta_ = value; }
+  FT get_dihedral_delta() const { return dihedral_delta_; }
+  void set_dihedral_delta(FT value) { dihedral_delta_ = value; }
+  FT get_feature_difference_delta() const { return feature_difference_delta_; }
+  void set_feature_difference_delta(FT value) { feature_difference_delta_ = value; }
+  FT get_feature_control_delta() const { return feature_control_delta_; }
+  void set_feature_control_delta(FT value) { feature_control_delta_ = value; }
+  bool get_inherit_element_types() const { return inherit_element_types_; }
+  void set_inherit_element_types(bool value) { inherit_element_types_ = value; }
+  bool get_use_feature_intensity_weights() const { return use_feature_intensity_weights_; }
+  void set_use_feature_intensity_weights(bool value) { use_feature_intensity_weights_ = value; }
+  // 2.4) vertex optimization parameters
+  int get_vertex_optimize_count() const { return vertex_optimize_count_; }
+  void set_vertex_optimize_count(int value) { vertex_optimize_count_ = value; }
+  FT get_vertex_optimize_ratio() const { return vertex_optimize_ratio_; }
+  void set_vertex_optimize_ratio(FT value) { vertex_optimize_ratio_ = value; }
+  int get_stencil_ring_size() const { return stencil_ring_size_; }
+  void set_stencil_ring_size(int value) { stencil_ring_size_ = value; }
+  OptimizeStrategy get_optimize_strategy() const{ return optimize_strategy_;}
+  void set_optimize_strategy(OptimizeStrategy value) { optimize_strategy_ = value; }
+  OptimizeType get_facet_optimize_type() const { return facet_optimize_type_; }
+  void set_facet_optimize_type(OptimizeType value) { facet_optimize_type_ = value; }
+  OptimizeType get_edge_optimize_type() const { return edge_optimize_type_; }
+  void set_edge_optimize_type(OptimizeType value) { edge_optimize_type_ = value; }
+  OptimizeType get_vertex_optimize_type() const { return vertex_optimize_type_; }
+  void set_vertex_optimize_type(OptimizeType value) { vertex_optimize_type_ = value; }
+  bool get_optimize_after_local_operations() const { return optimize_after_local_operations_; }
+  void set_optimize_after_local_operations(bool value) { optimize_after_local_operations_ = value; }
+
+  // 3) reset surfaces
+  void reset_mesh(Mesh &mesh, bool is_input) {
+    if (is_input) {
+      delete input_properties_;
+      input_properties_ = new Mesh_properties(mesh);
+    }
+    else {
+      delete remesh_properties_;
+      remesh_properties_ = new Mesh_properties(mesh);
+    }
+  }
+
+  // NOTE: the following functions are made public only for visualization
+  void calculate_normals(bool calculate_input, bool calcualte_remesh) const {
+    if (calculate_input) {
+      input_properties_->calculate_normals();
+    }
+    if (calcualte_remesh) {
+      remesh_properties_->calculate_normals();
+    }
+  }
+
+  void compute_faces(bool is_input, std::vector<float> *pos,
+      std::vector<float> *normals, std::vector<float> *colors) const {
+    Color color = is_input ? Color(150, 150, 200) : Color(200, 150, 150);
+    if (is_input) {
+      input_properties_->compute_faces(color, pos, normals, colors);
+    }
+    else {
+      remesh_properties_->compute_faces(color, pos, normals, colors);
+    }
+  }
+
+  void compute_edges(bool is_input, std::vector<float> *pos) const {
+    if (is_input) {
+      input_properties_->compute_edges(pos);
+    }
+    else {
+      remesh_properties_->compute_edges(pos);
+    }
+  }
+
+
+
+  
+  // test
+  void test() {
+    input_properties_->calculate_max_squared_errors();
+
+    std::set<face_descriptor> faces;
+    input_properties_->calculate_max_squared_errors(&faces);
+
+    //FT max_error = 0.0;
+    //halfedge_descriptor h = input_properties_->get_maximal_error(&max_error);
+  }
+
+
+
 
 private:
   // initializaiton
   void initialize_private_data() {
-    m_collapsed_list.clear();
-    m_collapsed_map.clear();
+    collapsed_list_.clear();
+    collapsed_map_.clear();
   }
 
 private:
   // 1) parameters
-  FT m_max_error_threshold;                 // general parameters
-  FT m_min_angle_threshold;
-  int m_max_mesh_complexity;
-  FT m_smooth_angle_delta;
-  bool m_apply_edge_flip;
-  EdgeFlipStrategy m_edge_flip_strategy;
-  bool m_flip_after_split_and_collapse;
-  bool m_relocate_after_local_operations;
-  RelocateStrategy m_relocate_strategy;
-  bool m_keep_vertex_in_one_ring;
-  bool m_use_local_aabb_tree;
-  int m_collapsed_list_size;
-  bool m_decrease_max_errors;
-  bool m_verbose_progress;
-  bool m_apply_initial_mesh_simplification;
-  bool m_apply_final_vertex_relocation;
-  int m_samples_per_facet_in;               // sample parameters
-  int m_samples_per_facet_out;
-  int m_max_samples_per_area;
-  int m_min_samples_per_triangle;
-  int m_bvd_iteration_count;
-  SampleNumberStrategy m_sample_number_strategy;
-  SampleStrategy m_sample_strategy;
-  bool m_use_stratified_sampling;
-  FT m_sum_theta;                           // feature function parameters
-  FT m_sum_delta;
-  FT m_dihedral_theta;
-  FT m_dihedral_delta;
-  FT m_feature_difference_delta;
-  FT m_feature_control_delta;
-  bool m_inherit_element_types;
-  bool m_use_feature_intensity_weights;
-  int m_vertex_optimize_count;              // vertex relocate_parameters
-  FT m_vertex_optimize_ratio;
-  int m_stencil_ring_size;
-  OptimizeStrategy m_optimize_strategy;
-  OptimizeType m_facet_optimize_type;
-  OptimizeType m_edge_optimize_type;
-  OptimizeType m_vertex_optimize_type;
-  bool m_optimize_after_local_operations;
+  FT max_error_threshold_;                 // general parameters
+  FT min_angle_threshold_;
+  int max_mesh_complexity_;
+  FT smooth_angle_delta_;
+  bool apply_edge_flip_;
+  EdgeFlipStrategy edge_flip_strategy_;
+  bool flip_after_split_and_collapse_;
+  bool relocate_after_local_operations_;
+  RelocateStrategy relocate_strategy_;
+  bool keep_vertex_in_one_ring_;
+  bool use_local_aabb_tree_;
+  int collapse_list_size_;
+  bool decrease_max_errors_;
+  bool verbose_progress_;
+  bool apply_initial_mesh_simplification_;
+  bool apply_final_vertex_relocation_;
+  int samples_per_facet_in_;               // sample parameters
+  int samples_per_facet_out_;
+  int max_samples_per_area_;
+  int min_samples_per_triangle_;
+  int bvd_iteration_count_;
+  SampleNumberStrategy sample_number_strategy_;
+  SampleStrategy sample_strategy_;
+  bool use_stratified_sampling_;
+  FT sum_theta_;                           // feature function parameters
+  FT sum_delta_;
+  FT dihedral_theta_;
+  FT dihedral_delta_;
+  FT feature_difference_delta_;
+  FT feature_control_delta_;
+  bool inherit_element_types_;
+  bool use_feature_intensity_weights_;
+  int vertex_optimize_count_;              // vertex relocate_parameters
+  FT vertex_optimize_ratio_;
+  int stencil_ring_size_;
+  OptimizeStrategy optimize_strategy_;
+  OptimizeType facet_optimize_type_;
+  OptimizeType edge_optimize_type_;
+  OptimizeType vertex_optimize_type_;
+  bool optimize_after_local_operations_;
 
   // 2) the collapse operator
-  Visit_list m_collapsed_list;
-  std::map<Point, std::map<FT, Visit_iter>, Point_comp> m_collapsed_map;
+  Visit_list collapsed_list_;
+  std::map<Point, std::map<FT, Visit_iter>, Point_comp> collapsed_map_;
 
-  // 3) member data and properties
-  Surface_mesh_properties m_Input_properties, m_Remesh_properties;
+  // 3) member data and properties (do not contain Surface_mesh)
+  Mesh_properties *input_properties_, *remesh_properties_;
 };
 
 }
