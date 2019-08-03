@@ -57,29 +57,33 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionFile_open_input_triggered();
   void on_actionFile_open_remesh_triggered();
   void on_actionFile_save_remesh_as_triggered();
+  void on_actionFile_open_Surface_mesh_triggered();
 
   // edit menu
   void on_actionEdit_copy_snapshot_triggered();
   void on_actionEdit_save_snapshot_triggered();
-  void on_actionEdit_parameter_settings_triggered();
 
-  // input
+  // input menu
   void on_actionInput_eliminate_degenerations_triggered();
   void on_actionInput_split_long_edges_triggered();
   void on_actionInput_properties_triggered();
 
-  // remesh
-  void on_actionRemesh_reset_from_input_triggered();
-  void on_actionRemesh_generate_links_triggered();
-  void on_actionRemesh_properties_triggered();
-
-  //isotropic
+  // isotropic remeshing menu
+  void on_actionIsotropic_split_border_triggered();
   void on_actionIsotropic_remeshing_triggered();
-  void on_actionIsotropic_initial_mesh_simplification_triggered();
-  void on_actionIsotropic_split_local_longest_edge_triggered();
-  void on_actionIsotropic_increase_minimal_angle_triggered();
-  void on_actionIsotropic_maximize_minimal_angle_triggered();
-  void on_actionIsotropic_final_Vertex_relocation_triggered();
+  void on_actionIsotropic_parameter_settings_triggered();
+
+  //min angle remeshing menu
+  void on_actionMinAngle_remesh_reset_from_input_triggered();
+  void on_actionMinAngle_remesh_generate_links_triggered();
+  void on_actionMinAngle_remeshing_triggered();
+  void on_actionMinAngle_initial_mesh_simplification_triggered();
+  void on_actionMinAngle_split_local_longest_edge_triggered();
+  void on_actionMinAngle_increase_minimal_angle_triggered();
+  void on_actionMinAngle_maximize_minimal_angle_triggered();
+  void on_actionMinAngle_final_Vertex_relocation_triggered();
+  void on_actionMinAngle_parameter_settings_triggered();
+  void on_actionMinAngle_remesh_properties_triggered();
   
   // view menu
   void on_actionView_input_triggered();                           // input
@@ -126,7 +130,7 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionView_vertex_out_links_triggered();
 
 private:
-  void open(QString file_name, OpenType open_type);
+  void open(QString file_name, bool is_surface_mesh, OpenType open_type);
   void update_menu_items();
 
 private:

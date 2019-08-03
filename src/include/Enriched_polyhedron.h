@@ -5,6 +5,12 @@
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Triangulation_hierarchy_2.h>
 #include <CGAL/Timer.h>
+
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/Polygon_mesh_processing/remesh.h>
+#include <CGAL/Polygon_mesh_processing/border.h>
+#include <boost/function_output_iterator.hpp>
+
 // local
 #include "Bvd.h"
 #include "Random.h"
@@ -16,46 +22,6 @@
 #define MAX_VALUE 10000
 #define MIN_VALUE 0.0001  // specified for numerical stability
 #define SQUARED_MIN_VALUE 0.00000001
-
-enum SampleNumberStrategy {
-  // #samples per facet is roughtly fixed (with respect to the sample strategy)
-  k_fixed = 0,  
-  // #samples per facet is variable with respect to size_of_facets()
-  k_variable    
-};
-
-enum SampleStrategy {
-  k_uniform = 0,  // #samples per facet is proportional to its area
-  k_adaptive      // #samples per facet is roughly the same
-};
-
-enum OptimizeType {
-  k_none = 0,
-  k_input_to_remesh,
-  k_remesh_to_input,
-  k_both
-};
-
-enum OptimizeStrategy {
-  k_approximation = 0,
-  k_Interpolation
-};
-
-enum EdgeFlipStrategy {
-  k_improve_valence = 0,
-  k_improve_angle
-};
-
-enum RelocateStrategy {
-  k_barycenter = 0,
-  k_cvt_barycenter
-};
-
-enum VertexType {
-  k_feature_vertex = 0,
-  k_crease_vertex,
-  k_smooth_vertex
-};
 
 enum DrawType {
   k_polyhedron = 0,
@@ -3768,5 +3734,28 @@ namespace CGAL {
     }
   };
 }
+
+// test
+typedef CGAL::Surface_mesh<Point> Mesh;
+typedef Kernel::Vector_3 Vector_3;
+typedef boost::graph_traits<Mesh>::halfedge_descriptor halfedge_descriptor;
+typedef boost::graph_traits<Mesh>::edge_descriptor edge_descriptor;
+typedef boost::graph_traits<Mesh>::vertex_descriptor vertex_descriptor;
+typedef boost::graph_traits<Mesh>::face_descriptor face_descriptor;
+
+namespace PMP = CGAL::Polygon_mesh_processing;
+
+struct halfedge2edge {
+  halfedge2edge(const Mesh &mesh, std::vector<edge_descriptor> &edges)
+  : m_mesh(mesh), m_edges(edges) {
+  }
+
+  void operator() (const halfedge_descriptor &h) const {
+    m_edges.push_back(edge(h, m_mesh));
+  }
+
+  const Mesh &m_mesh;
+  std::vector<edge_descriptor> &m_edges;
+};
 
 #endif  // CGAL_ENRICHED_POLYHEDRON_H

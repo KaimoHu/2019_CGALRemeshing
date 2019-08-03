@@ -12,7 +12,9 @@
 
 // local
 #include "Minangle_remesh.h"
+#include "old_remesh.h"
 #include "Viewer.h"
+#include "types.h"
 
 class Scene : public QObject {
   Q_OBJECT
@@ -31,6 +33,7 @@ class Scene : public QObject {
 
  public:
   typedef CGAL::qglviewer::ManipulatedFrame ManipulatedFrame;
+  typedef CGAL::Color Color;
 
   // 1) for rendering
   QGLContext *context;      // TODO: do we really need this data?
@@ -41,315 +44,176 @@ class Scene : public QObject {
   void draw(CGAL::QGLViewer *viewer);
 
   // 2) file process
-  bool open(QString file_name);
-  bool open_input(QString file_name);
-  bool open_remesh(QString file_name);
+  bool open(QString file_name, bool is_surface_mesh);
+  bool open_input(QString file_name, bool is_surface_mesh);
+  bool open_remesh(QString file_name, bool is_sueface_mesh);
   void save_remesh_as(QString file_name);
 
   // 3) parameter settings access
+  double get_target_edge_length() const { return m_target_edge_length; }
+  void set_target_edge_length(double value) { m_target_edge_length = value; }
+  int get_smooth_iteration_count() const { return m_smooth_iteration_count; }
+  void set_smooth_iteration_count(int value) { m_smooth_iteration_count = value; }
+
   double get_max_error_threshold() const 
-  {
-    return minangle_remesh.get_max_error_threshold();
-  }
+      { return old_remesh.get_max_error_threshold();}
   void set_max_error_threshold(double value) 
-  {
-    minangle_remesh.set_max_error_threshold(value);
-  }
+      { old_remesh.set_max_error_threshold(value); }
   double get_min_angle_threshold() const 
-  {
-    return minangle_remesh.get_min_angle_threshold();
-  }
+      { return old_remesh.get_min_angle_threshold(); }
   void set_min_angle_threshold(double value) 
-  {
-    minangle_remesh.set_min_angle_threshold(value);
-  }
+      { old_remesh.set_min_angle_threshold(value); }
   int get_max_mesh_complexity() const 
-  {
-    return minangle_remesh.get_max_mesh_complexity();
-  }
+      { return old_remesh.get_max_mesh_complexity(); }
   void set_max_mesh_complexity(int value) 
-  {
-    minangle_remesh.set_max_mesh_complexity(value);
-  }
+      { old_remesh.set_max_mesh_complexity(value); }
   double get_smooth_angle_delta() const
-  {
-    return minangle_remesh.get_smooth_angle_delta();
-  }
+      { return old_remesh.get_smooth_angle_delta(); }
   void set_smooth_angle_delta(double value) 
-  {
-    minangle_remesh.set_smooth_angle_delta(value);
-  }
+      { old_remesh.set_smooth_angle_delta(value); }
   bool get_apply_edge_flip() const 
-  {
-    return minangle_remesh.get_apply_edge_flip();
-  }
+      { return old_remesh.get_apply_edge_flip(); }
   void set_apply_edge_flip(bool value)
-  {
-    minangle_remesh.set_apply_edge_flip(value);
-  }
+      { old_remesh.set_apply_edge_flip(value); }
   EdgeFlipStrategy get_edge_flip_strategy() const 
-  {
-    return minangle_remesh.get_edge_flip_strategy();
-  }
+      { return old_remesh.get_edge_flip_strategy(); }
   void set_edge_flip_strategy(EdgeFlipStrategy value) 
-  {
-    minangle_remesh.set_edge_flip_strategy(value);
-  }
+      { old_remesh.set_edge_flip_strategy(value); }
   bool get_flip_after_split_and_collapse() const 
-  {
-    return minangle_remesh.get_flip_after_split_and_collapse();
-  }
+      { return old_remesh.get_flip_after_split_and_collapse(); }
   void set_flip_after_split_and_collapse(bool value) 
-  {
-    minangle_remesh.set_flip_after_split_and_collapse(value);
-  }
+      { old_remesh.set_flip_after_split_and_collapse(value); }
   bool get_relocate_after_local_operations() const 
-  {
-    return minangle_remesh.get_relocate_after_local_operations();
-  }
+      { return old_remesh.get_relocate_after_local_operations(); }
   void set_relocate_after_local_operations(bool value)
-  {
-    minangle_remesh.set_relocate_after_local_operations(value);
-  }
+      { old_remesh.set_relocate_after_local_operations(value); }
   RelocateStrategy get_relocate_strategy() const
-  {
-    return minangle_remesh.get_relocate_strategy();
-  }
+      { return old_remesh.get_relocate_strategy(); }
   void set_relocate_strategy(RelocateStrategy value) 
-  {
-    minangle_remesh.set_relocate_strategy(value);
-  }
+      { old_remesh.set_relocate_strategy(value); }
   bool get_keep_vertex_in_one_ring() const
-  {
-    return minangle_remesh.get_keep_vertex_in_one_ring();
-  }
+      { return old_remesh.get_keep_vertex_in_one_ring(); }
   void set_keep_vertex_in_one_ring(bool value) 
-  {
-    minangle_remesh.set_keep_vertex_in_one_ring(value);
-  }
+      { old_remesh.set_keep_vertex_in_one_ring(value); }
   bool get_use_local_aabb_tree() const
-  {
-    return minangle_remesh.get_use_local_aabb_tree();
-  }
+      { return old_remesh.get_use_local_aabb_tree(); }
   void set_use_local_aabb_tree(bool value)
-  {
-    minangle_remesh.set_use_local_aabb_tree(value);
-  }
+      { old_remesh.set_use_local_aabb_tree(value); }
   int get_collapsed_list_size() const 
-  {
-    return minangle_remesh.get_collapsed_list_size();
-  }
+      { return old_remesh.get_collapsed_list_size(); }
   void set_collapsed_list_size(int value)
-  {
-    minangle_remesh.set_collapsed_list_size(value);
-  }
+      { old_remesh.set_collapsed_list_size(value); }
   bool get_decrease_max_errors() const 
-  {
-    return minangle_remesh.get_decrease_max_errors();
-  }
+      { return old_remesh.get_decrease_max_errors(); }
   void set_decrease_max_errors(bool value) 
-  {
-    minangle_remesh.set_decrease_max_errors(value);
-  }
+      { old_remesh.set_decrease_max_errors(value); }
   bool get_track_information() const
-  {
-    return minangle_remesh.get_track_information();
-  }
+      { return old_remesh.get_verbose_progress(); }
   void set_track_information(bool value) 
-  {
-    minangle_remesh.set_track_information(value);
-  }
+      { old_remesh.set_verbose_progress(value); }
   bool get_apply_initial_mesh_simplification() const
-  {
-    return minangle_remesh.get_apply_initial_mesh_simplification();
-  }
+      { return old_remesh.get_apply_initial_mesh_simplification(); }
   void set_apply_initial_mesh_simplification(bool value) 
-  {
-    minangle_remesh.set_apply_initial_mesh_simplification(value);
-  }
+      { old_remesh.set_apply_initial_mesh_simplification(value); }
   bool get_apply_final_vertex_relocation() const 
-  {
-    return minangle_remesh.get_apply_final_vertex_relocation();
-  }
+      { return old_remesh.get_apply_final_vertex_relocation(); }
   void set_apply_final_vertex_relocation(bool value) 
-  {
-    minangle_remesh.set_apply_final_vertex_relocation(value);
-  }
+      { old_remesh.set_apply_final_vertex_relocation(value); }
   
   int get_samples_per_facet_in() const 
-  {
-    return minangle_remesh.get_samples_per_facet_in();
-  }
+      { return old_remesh.get_samples_per_facet_in(); }
   void set_samples_per_facet_in(int value)
-  {
-    minangle_remesh.set_samples_per_facet_in(value);
-  }
+      { old_remesh.set_samples_per_facet_in(value); }
   int get_samples_per_facet_out() const 
-  {
-    return minangle_remesh.get_samples_per_facet_out();
-  }
+      { return old_remesh.get_samples_per_facet_out(); }
   void set_samples_per_facet_out(int value) 
-  {
-    minangle_remesh.set_samples_per_facet_out(value);
-  }
+      { old_remesh.set_samples_per_facet_out(value); }
   int get_max_samples_per_area() const
-  {
-    return minangle_remesh.get_max_samples_per_area();
-  }
+      { return old_remesh.get_max_samples_per_area(); }
   void set_max_samples_per_area(int value)
-  {
-    minangle_remesh.set_max_samples_per_area(value);
-  }
+      { old_remesh.set_max_samples_per_area(value); }
   int get_min_samples_per_triangle() const
-  {
-    return minangle_remesh.get_min_samples_per_triangle();
-  }
+      { return old_remesh.get_min_samples_per_triangle(); }
   void set_min_samples_per_triangle(int value)
-  {
-    minangle_remesh.set_min_samples_per_triangle(value);
-  }
+      { old_remesh.set_min_samples_per_triangle(value); }
   int get_bvd_iteration_count() const
-  {
-    return minangle_remesh.get_bvd_iteration_count();
-  }
+      { return old_remesh.get_bvd_iteration_count(); }
   void set_bvd_iteration_count(int value)
-  {
-    minangle_remesh.set_bvd_iteration_count(value);
-  }
+      { old_remesh.set_bvd_iteration_count(value); }
   SampleNumberStrategy get_sample_number_strategy() const
-  {
-    return minangle_remesh.get_sample_number_strategy();
-  }
+      { return old_remesh.get_sample_number_strategy(); }
   void set_sample_number_strategy(SampleNumberStrategy value) 
-  {
-    minangle_remesh.set_sample_number_strategy(value);
-  }
+      { old_remesh.set_sample_number_strategy(value); }
   SampleStrategy get_sample_strategy() const
-  {
-    return minangle_remesh.get_sample_strategy();
-  }
+      { return old_remesh.get_sample_strategy(); }
   void set_sample_strategy(SampleStrategy value)
-  {
-    minangle_remesh.set_sample_strategy(value);
-  }
+      { old_remesh.set_sample_strategy(value); }
   bool get_use_stratified_sampling() const 
-  {
-    return minangle_remesh.get_use_stratified_sampling();
-  }
+      { return old_remesh.get_use_stratified_sampling(); }
   void set_use_stratified_sampling(bool value)
-  {
-    minangle_remesh.set_use_stratified_sampling(value);
-  }
+      { old_remesh.set_use_stratified_sampling(value); }
 
-  double get_sum_theta() const { return minangle_remesh.get_sum_theta(); }
-  void set_sum_theta(double value) { minangle_remesh.set_sum_theta(value); }
-  double get_sum_delta() const { return minangle_remesh.get_sum_delta(); }
-  void set_sum_delta(double value) { minangle_remesh.set_sum_delta(value); }
+  double get_sum_theta() const { return old_remesh.get_sum_theta(); }
+  void set_sum_theta(double value) { old_remesh.set_sum_theta(value); }
+  double get_sum_delta() const { return old_remesh.get_sum_delta(); }
+  void set_sum_delta(double value) { old_remesh.set_sum_delta(value); }
   double get_dihedral_theta() const 
-    { return minangle_remesh.get_dihedral_theta(); }
+      { return old_remesh.get_dihedral_theta(); }
   void set_dihedral_theta(double value) 
-    { minangle_remesh.set_dihedral_theta(value); }
+      { old_remesh.set_dihedral_theta(value); }
   double get_dihedral_delta() const 
-    { return minangle_remesh.get_dihedral_delta(); }
+      { return old_remesh.get_dihedral_delta(); }
   void set_dihedral_delta(double value)
-    { minangle_remesh.set_dihedral_delta(value); }
+      { old_remesh.set_dihedral_delta(value); }
   double get_feature_difference_delta() const 
-  {
-    return minangle_remesh.get_feature_difference_delta();
-  }
+      { return old_remesh.get_feature_difference_delta(); }
   void set_feature_difference_delta(double value)
-  {
-    minangle_remesh.set_feature_difference_delta(value);
-  }
+      { old_remesh.set_feature_difference_delta(value); }
   double get_feature_control_delta() const 
-  {
-    return minangle_remesh.get_feature_control_delta();
-  }
+      { return old_remesh.get_feature_control_delta(); }
   void set_feature_control_delta(double value)
-  {
-    minangle_remesh.set_feature_control_delta(value);
-  }
+      { old_remesh.set_feature_control_delta(value); }
   bool get_inherit_element_types() const
-  {
-    return minangle_remesh.get_inherit_element_types();
-  }
+      { return old_remesh.get_inherit_element_types(); }
   void set_inherit_element_types(bool value)
-  {
-    minangle_remesh.set_inherit_element_types(value);
-  }
+      { old_remesh.set_inherit_element_types(value); }
   bool get_use_feature_intensity_weights() const 
-  {
-    return minangle_remesh.get_use_feature_intensity_weights();
-  }
+      { return old_remesh.get_use_feature_intensity_weights(); }
   void set_use_feature_intensity_weights(bool value)
-  {
-    minangle_remesh.set_use_feature_intensity_weights(value);
-  }
+      { old_remesh.set_use_feature_intensity_weights(value); }
 
   int get_vertex_optimize_count() const
-  {
-    return minangle_remesh.get_vertex_optimize_count();
-  }
+      { return old_remesh.get_vertex_optimize_count(); }
   void set_vertex_optimize_count(int value) 
-  {
-    minangle_remesh.set_vertex_optimize_count(value);
-  }
+      { old_remesh.set_vertex_optimize_count(value); }
   double get_vertex_optimize_ratio() const 
-  {
-    return minangle_remesh.get_vertex_optimize_ratio();
-  }
+      { return old_remesh.get_vertex_optimize_ratio(); }
   void set_vertex_optimize_ratio(double value) 
-  {
-    minangle_remesh.set_vertex_optimize_ratio(value);
-  }
+      { old_remesh.set_vertex_optimize_ratio(value); }
   int get_stencil_ring_size() const 
-  {
-    return minangle_remesh.get_stencil_ring_size();
-  }
+      { return old_remesh.get_stencil_ring_size(); }
   void set_stencil_ring_size(int value)
-  {
-    minangle_remesh.set_stencil_ring_size(value);
-  }
+      { old_remesh.set_stencil_ring_size(value); }
   OptimizeStrategy get_optimize_strategy() const 
-  {
-    return minangle_remesh.get_optimize_strategy();
-  }
+      { return old_remesh.get_optimize_strategy(); }
   void set_optimize_strategy(OptimizeStrategy value)
-  {
-    minangle_remesh.set_optimize_strategy(value);
-  }
+      { old_remesh.set_optimize_strategy(value); }
   OptimizeType get_facet_optimize_type() const
-  {
-    return minangle_remesh.get_facet_optimize_type();
-  }
+      { return old_remesh.get_facet_optimize_type(); }
   void set_facet_optimize_type(OptimizeType value) 
-  {
-    minangle_remesh.set_facet_optimize_type(value);
-  }
+      { old_remesh.set_facet_optimize_type(value); }
   OptimizeType get_edge_optimize_type() const 
-  {
-    return minangle_remesh.get_edge_optimize_type();
-  }
+      { return old_remesh.get_edge_optimize_type(); }
   void set_edge_optimize_type(OptimizeType value) 
-  {
-    minangle_remesh.set_edge_optimize_type(value);
-  }
+      { old_remesh.set_edge_optimize_type(value); }
   OptimizeType get_vertex_optimize_type() const
-  {
-    return minangle_remesh.get_vertex_optimize_type();
-  }
+      { return old_remesh.get_vertex_optimize_type(); }
   void set_vertex_optimize_type(OptimizeType value)
-  {
-    minangle_remesh.set_vertex_optimize_type(value);
-  }
+      { old_remesh.set_vertex_optimize_type(value); }
   bool get_optimize_after_local_operations() const
-  {
-    return minangle_remesh.get_optimize_after_local_operations();
-  }
+      { return old_remesh.get_optimize_after_local_operations(); }
   void set_optimize_after_local_operations(bool value)
-  {
-    minangle_remesh.set_optimize_after_local_operations(value);
-  }
+      { old_remesh.set_optimize_after_local_operations(value); }
 
   bool get_link_initialized() const { return m_links_initialized; }
   int get_optimize_type_index(OptimizeType ot) const;
@@ -399,22 +263,25 @@ class Scene : public QObject {
   void toggle_view_facet_capacities();
   void toggle_view_facet_weights();
 
-  // 5) menu functions (may need update)
-  void eliminate_degenerations();                       // input menu
+  // 5) menu functions
+  void eliminate_degenerations();              // input menu
   void split_input_long_edges();
   void input_properties();
-  void reset_from_input();                              // remesh menu
-  void generate_links_and_types();
-  void remesh_properties();                        
-  void isotropic_remeshing();                           // isotropic menu
-  void initial_mesh_simplification();
-  void split_local_longest_edge();  
-  void increase_minimal_angle();
-  void maximize_minimal_angle();
-  void final_vertex_relocation();
+  void split_border();                         // isotropic remeshing menu
+  void isotropic_remeshing();
+  void old_remesh_reset_from_input();     // min angle remeshing menu
+  void old_remesh_generate_links_and_types();
+  void old_remesh_properties();
+  void old_remeshing();                           
+  void old_remesh_initial_mesh_simplification();
+  void old_remesh_split_local_longest_edge();  
+  void old_remesh_increase_minimal_angle();
+  void old_remesh_maximize_minimal_angle();
+  void old_remesh_final_vertex_relocation();
 
   // 6) operations (may need update)
   void update_feature_intensities_and_clear_links();
+  double calculate_average_length(const Mesh &mesh) const;
 
  private:
    // 1) for renderring
@@ -438,22 +305,36 @@ class Scene : public QObject {
   Bbox m_bbox;
   bool are_buffers_initialized;
   // 1.2) member data
-  Polyhedron *m_pInput, *m_pRemesh;
-  Minangle_remesh<Kernel, Polyhedron> minangle_remesh;
+  Mesh *m_pSurfacemeshInput, *m_pSurfacemeshRemesh;       // Surface_mesh
+  Polyhedron *m_pPolyhedronInput, *m_pPolyhedronRemesh;   // Polyhedron_3
+  Old_remesh<Kernel, Polyhedron> old_remesh;
   Facet_tree m_input_facet_tree, m_remesh_facet_tree;
+
+  // test
+  //PMP::Minangle_remesh<Kernel> m_minangle_remesh;
+  PMP::internal::Minangle_remesher<Kernel> *m_minangle_remesher;
+  //PMP::internal::Mesh_properties<Kernel> m_input_properties, m_remesh_properties;
+
+  // 1.3) parameter settings
+  double m_target_edge_length;
+  int m_smooth_iteration_count;
 
   // 2) Shaders elements
   enum VAOs {
-    ka_Input_faces = 0,           // input facets or cells
-    ka_Input_boundaries,          //       cell boundaries
-    ka_Input_samples,             //       samples
-    ka_Input_normal_edges,        //       edges
-    ka_Input_special_edges,       //       minimal radian edges or crease edges
-    ka_Remesh_faces,              // remesh
-    ka_Remesh_boundaries,
-    ka_Remesh_samples,
-    ka_Remesh_normal_edges,
-    ka_Remesh_special_edges,
+    ka_SInput_faces = 0,
+    ka_SInput_edges,
+    ka_PInput_faces,               // Polyhedron_3 input facets or cells
+    ka_PInput_boundaries,          //       cell boundaries
+    ka_PInput_samples,             //       voronoi samples
+    ka_PInput_normal_edges,        //       edges
+    ka_PInput_special_edges,       //       minimal radian edges or crease edges
+    ka_SRemesh_faces,
+    ka_SRemesh_edges,
+    ka_PRemesh_faces,              // Polyhedron_3 remesh
+    ka_PRemesh_boundaries,
+    ka_PRemesh_samples,
+    ka_PRemesh_normal_edges,
+    ka_PRemesh_special_edges,
     ka_Facet_in_start,             // facet in links
     ka_Facet_in_end,
     ka_Facet_in_links,
@@ -475,19 +356,27 @@ class Scene : public QObject {
     ka_NbOfVaos
   };
   enum VBOs {
-    kb_Input_face_pos = 0,         // input
-    kb_Input_face_normals,
-    kb_Input_face_colors,
-    kb_Input_boundary_pos,
-    kb_Input_sample_pos,
-    kb_Input_normal_edge_pos,
-    kb_Input_special_edge_pos,
-    kb_Remesh_face_pos,            // remesh
-    kb_Remesh_face_normals,
-    kb_Remesh_face_colors,
-    kb_Remesh_boundary_pos,
-    kb_Remesh_sample_pos,
-    kb_Remesh_normal_edge_pos,
+    kb_SInput_face_pos = 0,         // Surface_mesh input
+    kb_SInput_face_normals,
+    kb_SInput_face_colors,
+    kb_SInput_edge_pos,
+    kb_PInput_face_pos,             // Polyhedron_3 input
+    kb_PInput_face_normals,
+    kb_PInput_face_colors,
+    kb_PInput_boundary_pos,
+    kb_PInput_sample_pos,
+    kb_PInput_normal_edge_pos,
+    kb_PInput_special_edge_pos,
+    kb_SRemesh_face_pos,            // Surface_mesh remesh
+    kb_SRemesh_face_normals,
+    kb_SRemesh_face_colors,
+    kb_SRemesh_edge_pos,
+    kb_PRemesh_face_pos,            // Polyhedron_3 remesh
+    kb_PRemesh_face_normals,
+    kb_PRemesh_face_colors,
+    kb_PRemesh_boundary_pos,
+    kb_PRemesh_sample_pos,
+    kb_PRemesh_normal_edge_pos,
     kb_Remesh_special_edge_pos,
     kb_Facet_in_start_points,      // facet in links
     kb_Facet_in_end_points,
@@ -526,8 +415,10 @@ class Scene : public QObject {
   int colorLocation_with_light;
   
   // 3) rendering variables
-  bool m_view_input;                              // input
-  bool m_view_remesh;                             // remesh
+  bool m_view_surfacemesh_input;                  // Surface_mesh input
+  bool m_view_surfacemesh_remesh;                 // Surface_mesh remesh
+  bool m_view_polyhedron_input;                   // Polyhedron_3 input
+  bool m_view_polyhedron_remesh;                  // Polyhedron_3 remesh
   bool m_view_facet_in_start_points;              // facet in links
   bool m_view_facet_in_end_points;
   bool m_view_facet_in_links;
@@ -550,20 +441,28 @@ class Scene : public QObject {
   bool m_view_polyhedron_edges;
   DrawType m_draw_type;                           // draw options
   RenderType m_render_type;
-  std::vector<float> pos_input_faces;             // input
-  std::vector<float> pos_input_face_normals;
-  std::vector<float> pos_input_face_colors;
-  std::vector<float> pos_input_boundaries;
-  std::vector<float> pos_input_samples;
-  std::vector<float> pos_input_normal_edges;
-  std::vector<float> pos_input_special_edges;
-  std::vector<float> pos_remesh_faces;            // remesh
-  std::vector<float> pos_remesh_face_normals;
-  std::vector<float> pos_remesh_face_colors;
-  std::vector<float> pos_remesh_boundaries;
-  std::vector<float> pos_remesh_samples;
-  std::vector<float> pos_remesh_normal_edges;
-  std::vector<float> pos_remesh_special_edges;
+  std::vector<float> pos_sinput_faces;            // Surface_mesh input
+  std::vector<float> pos_sinput_face_normals;
+  std::vector<float> pos_sinput_face_colors;
+  std::vector<float> pos_sinput_edges;
+  std::vector<float> pos_pinput_faces;            // Polyhedron_3 input
+  std::vector<float> pos_pinput_face_normals;
+  std::vector<float> pos_pinput_face_colors;
+  std::vector<float> pos_pinput_boundaries;
+  std::vector<float> pos_pinput_samples;
+  std::vector<float> pos_pinput_normal_edges;
+  std::vector<float> pos_pinput_special_edges;
+  std::vector<float> pos_sremesh_faces;           // Surface_mesh remesh
+  std::vector<float> pos_sremesh_face_normals;
+  std::vector<float> pos_sremesh_face_colors;
+  std::vector<float> pos_sremesh_edges;
+  std::vector<float> pos_premesh_faces;           // Polyhedron_3 remesh
+  std::vector<float> pos_premesh_face_normals;
+  std::vector<float> pos_premesh_face_colors;
+  std::vector<float> pos_premesh_boundaries;
+  std::vector<float> pos_premesh_samples;
+  std::vector<float> pos_premesh_normal_edges;
+  std::vector<float> pos_premesh_special_edges;
   std::vector<float> pos_facet_in_start_points;   // facet in links
   std::vector<float> pos_facet_in_end_points;
   std::vector<float> pos_facet_in_links;

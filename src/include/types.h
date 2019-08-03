@@ -1,7 +1,7 @@
 #ifndef CGAL_TYPES_H
 #define CGAL_TYPES_H
 
-#include "Enriched_polyhedron.h"
+#include "enriched_polyhedron.h"
 
 #include <CGAL/Search_traits.h>                   // Kd tree
 #include <CGAL/Search_traits_adapter.h>
@@ -23,14 +23,14 @@ typedef CGAL::AABB_traits<Kernel, Edge_primitive> Edge_traits;
 typedef CGAL::AABB_tree<Edge_traits> Edge_tree;
 
 struct Vertex_property_map {      // definition of the property map of a vertex
-  typedef Point value_type;
-  typedef const value_type &reference;
-  typedef const Vertex_handle key_type;
-  typedef boost::readable_property_map_tag category;
+typedef Point value_type;
+typedef const value_type &reference;
+typedef const Vertex_handle key_type;
+typedef boost::readable_property_map_tag category;
 };
-inline Vertex_property_map::reference get(Vertex_property_map, 
-                                          Vertex_property_map::key_type p) {
-  return p->point();
+inline Vertex_property_map::reference get(Vertex_property_map,
+Vertex_property_map::key_type p) {
+return p->point();
 }
 typedef CGAL::Search_traits_3<Kernel> Vertex_traits_base;
 typedef CGAL::Search_traits_adapter<Vertex_handle, Vertex_property_map, Vertex_traits_base> Vertex_traits;
@@ -42,21 +42,21 @@ typedef K_neighbor_search::Distance Vertex_distance;*/
 namespace boost {
   template<>
   struct graph_traits<Polyhedron> :
-    public graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> >{};
+  public graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> >{};
 
   template<>
   struct graph_traits<Polyhedron const> :
-    public graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> const>{};
+  public graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> const>{};
 
   template<class Tag>
   struct property_map<Polyhedron, Tag> :
-    public property_map<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item>, Tag>{};
+  public property_map<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item>, Tag>{};
 }
 
 namespace CGAL {
   template<>
   struct halfedge_graph_traits<Polyhedron> :
-    public halfedge_graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> >{};
+  public halfedge_graph_traits<CGAL::Polyhedron_3<Kernel, CGAL::Enriched_item> >{};
 }
 
 #endif // CGAL_TYPES_H

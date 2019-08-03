@@ -39,4 +39,5 @@ int main(int argc, char **argv) {
 #include "Viewer_moc.cpp"
 #include "Main_window.cpp"
 #include "Main_window_moc.cpp"
+#include "Isotropic_parameters_moc.cpp"
 #include "MinAngle_parameters_moc.cpp"
