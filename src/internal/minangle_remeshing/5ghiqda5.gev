@@ -229,7 +229,7 @@ public:
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_list>>::type Face_link_list;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_iter_list>>::type Face_link_iter_list;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_pointer_list>>::type Face_link_pointer_list;
-  typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<int>>::type Halfedge_tags;         // edges
+  typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<int>>::type Halfedge_tags; // halfedges
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<FT>>::type Halfedge_normal_dihedrals;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<bool>>::type Halfedge_are_creases;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<Link_list>>::type Halfedge_link_list;
@@ -243,17 +243,24 @@ public:
   typedef typename AABB_tree<Face_traits> Face_tree;
   typedef typename Face_tree::Point_and_primitive_id Point_and_primitive_id;
   // Dynamic priority queues
-  typedef boost::bimap<boost::bimaps::set_of<halfedge_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_halfedge_long;
+  typedef boost::bimap<
+    boost::bimaps::set_of<halfedge_descriptor>,
+    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_halfedge_long;
   typedef typename DPQueue_halfedge_long::value_type    Halfedge_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<halfedge_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_halfedge_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<halfedge_descriptor>,
+    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_halfedge_short;
   typedef typename DPQueue_halfedge_short::value_type   Halfedge_short;
-  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_vertex_long;
+  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>,
+    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_vertex_long;
   typedef typename DPQueue_vertex_long::value_type      Vertex_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_vertex_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>,
+    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_vertex_short;
   typedef typename DPQueue_vertex_short::value_type     Vertex_short;
-  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_face_long;
+  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>,
+    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_face_long;
   typedef typename DPQueue_face_long::value_type        Face_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_face_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>,
+    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_face_short;
   typedef typename DPQueue_face_short::value_type       Face_short;
 
   // Struct definitions
@@ -307,15 +314,7 @@ public:
 
   virtual ~Mesh_properties() {}
 
-
-
-  // temp
-  size_t size_of_vertices() { return mesh_.number_of_vertices(); }
-  
-
-
-
-  // elements access
+  // element access
   const Mesh& get_mesh() const { return mesh_; }
 
   Point& get_point(vertex_descriptor vd) { return mesh_.point(vd); }
@@ -327,14 +326,18 @@ public:
 
   face_descriptor get_face(halfedge_descriptor hd) const { return mesh_.face(hd); }
 
-  void get_all_faces(Face_list *faces) {
+  inline face_descriptor get_null_face() const { return mesh_.null_face(); }
+
+  bool is_border(halfedge_descriptor hd) const { return mesh_.is_border(hd); }
+
+  size_t size_of_vertices() { return mesh_.number_of_vertices(); }
+
+  /*void get_all_faces(Face_list *faces) {
     for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       faces->push_back(*fi);
     }
-  }
-
-  inline face_descriptor get_null_face() const { return mesh_.null_face(); }
+  }*/
 
   void get_all_halfedges(Halfedge_list *halfedges) {
     for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
@@ -360,65 +363,144 @@ public:
       vertices->push_back(*vi);
     }
   }
-
   inline vertex_descriptor get_null_vertex() const { return mesh_.null_vertex(); }
 
+  void reset_face_properties(face_descriptor fd, face_descriptor fd_source) {
+    // step 1: reset the basic properties
+    if (fd_source == get_null_face()) {
+      set_face_tag(fd, 0);
+      set_face_normal(fd, CGAL::NULL_VECTOR);
+      set_face_max_squared_error(fd, 0.0);
+    }
+    else {
+      set_face_tag(fd, get_face_tag(fd_source));
+      set_face_normal(fd, get_face_normal(fd_source));
+      set_face_max_squared_error(fd, get_face_max_squared_error(fd_source));
+    }
+    // step 2: reset the sample links
+    clear_face_links(fd);
+  }
+
+  void clear_face_links(face_descriptor fd) {
+    set_face_out_links(fd, Link_list());
+    set_face_in_links(fd, Link_iter_list());
+    set_edge_in_links(fd, Link_iter_list());
+    set_vertex_in_links(fd, Link_pointer_list());
+  }
+
+  void reset_halfedge_properties(halfedge_descriptor hd, 
+                                 halfedge_descriptor hd_source) {
+    // step 1: reset the basic properties
+    if (hd_source == get_null_halfedge()) {
+      set_halfedge_tag(hd, 0);
+      set_halfedge_normal_dihedral(hd, -1.0);
+      set_halfedge_is_crease(hd, false);
+    }
+    else {
+      set_halfedge_tag(hd, get_halfedge_tag(hd_source));
+      set_halfedge_normal_dihedral(hd, get_halfedge_normal_dihedral(hd_source));
+      set_halfedge_is_crease(hd, get_halfedge_is_crease(hd_source));
+    }
+    // step 2: reset the sample links
+    clear_halfedge_links(hd);
+  }
+
+  void clear_halfedge_links(halfedge_descriptor hd) {
+    set_halfege_out_links(hd, Link_list());
+  }
+
+  void reset_vertex_properties(vertex_descriptor vd,
+                               vertex_descriptor vd_source) {
+    // step 1: reset the basic properties
+    if (vd_source == get_null_vertex()) {
+      set_vertex_tag(vd, 0);
+      set_vertex_max_dihedral(vd, -1.0);
+      set_vertex_gaussian_curvature(vd, 0.0);
+    }
+    else {
+      set_vertex_tag(vd, get_vertex_tag(vd_source));
+      set_vertex_max_dihedral(vd, get_vertex_max_dihedral(vd_source));
+      set_vertex_gaussian_curvature(vd, get_vertex_gaussian_curvature(vd_source));
+    }
+    // step 2: reset the sample links 
+    clear_vertex_links(vd);
+  }
+
+  void clear_vertex_links(vertex_descriptor vd) {
+    set_vertex_out_link(vd, Link());
+  }
+
+  //Face_tags& get_all_face_tags() { return face_tags_; }
   int& get_face_tag(face_descriptor fd) { return get(face_tags_, fd); }
   const int& get_face_tag(face_descriptor fd) const { return get(face_tags_, fd); }
   void set_face_tag(face_descriptor fd, int value) { put(face_tags_, fd, value); }
 
+  //Face_normals& get_all_face_normals() { return face_normals_; }
   Normal& get_face_normal(face_descriptor fd) { return get(face_normals_, fd); }
   const Normal& get_face_normal(face_descriptor fd) const { return get(face_normals_, fd); }
   void set_face_normal(face_descriptor fd, Vector value) { put(face_normals_, fd, value); }
 
+  //Face_max_errors& get_all_face_max_errors() { return face_max_errors_; }
   FT& get_face_max_squared_error(face_descriptor fd) { return get(face_max_squared_errors_, fd); }
   const FT& get_face_max_squared_error(face_descriptor fd) const { return get(face_max_squared_errors_, fd); }
   void set_face_max_squared_error(face_descriptor fd, FT value) { put(face_max_squared_errors_, fd, value); }
 
+  //Face_link_list& get_all_face_out_links() { return face_out_links_; }
   Link_list& get_face_out_links(face_descriptor fd) { return get(face_out_links_, fd); }
   const Link_list& get_face_out_links(face_descriptor fd) const { return get(face_out_links_, fd); }
   void set_face_out_links(face_descriptor fd, const Link_list &value) { put(face_out_links_, fd, value); }
 
+  //Face_link_iter_list& get_all_face_in_links() { return face_in_links_; }
   Link_iter_list& get_face_in_links(face_descriptor fd) { return get(face_in_links_, fd); }
   const Link_iter_list& get_face_in_links(face_descriptor fd) const { return get(face_in_links_, fd); }
   void set_face_in_links(face_descriptor fd, const Link_iter_list &value) { put(face_in_links_, fd, value); }
 
+  //Face_link_iter_list& get_all_edge_in_links() { return edge_in_links_; }
   Link_iter_list& get_edge_in_links(face_descriptor fd) { return get(edge_in_links_, fd); }
   const Link_iter_list& get_edge_in_links(face_descriptor fd) const { return get(edge_in_links_, fd); }
   void set_edge_in_links(face_descriptor fd, const Link_iter_list &value) { put(edge_in_links_, fd, value); }
 
+  //Face_link_pointer_list& get_all_vertex_in_links() { return vertex_in_links_; }
   Link_pointer_list& get_vertex_in_links(face_descriptor fd) { return get(vertex_in_links_, fd); }
   const Link_pointer_list& get_vertex_in_links(face_descriptor fd) const { return get(vertex_in_links_, fd); }
   void set_vertex_in_links(face_descriptor fd, const Link_pointer_list &value) { put(vertex_in_links_, fd, value); }
 
+  //Halfedge_tags& get_all_halfedge_tags() { return halfedge_tags_; }
   int& get_halfedge_tag(halfedge_descriptor hd) { return get(halfedge_tags_, hd); }
   const int& get_halfedge_tag(halfedge_descriptor hd) const { return get(halfedge_tags_, hd); }
   void set_halfedge_tag(halfedge_descriptor hd, int value) { put(halfedge_tags_, hd, value); }
 
+  //Halfedge_normal_dihedrals& get_all_halfedge_normal_dihedral() { return halfedge_normal_dihedrals_; }
   FT& get_halfedge_normal_dihedral(halfedge_descriptor hd) { return get(halfedge_normal_dihedrals_, hd); }
   const FT& get_halfedge_normal_dihedral(halfedge_descriptor hd) const { return get(halfedge_normal_dihedrals_, hd); }
   void set_halfedge_normal_dihedral(halfedge_descriptor hd, FT value) { put(halfedge_normal_dihedrals_, hd, value); }
 
+  //Halfedge_are_creases& get_all_halfedge_are_creases() { return halfedge_are_creases_; }
   bool get_halfedge_is_crease(halfedge_descriptor hd) { return get(halfedge_are_creases_, hd); }
   const bool get_halfedge_is_crease(halfedge_descriptor hd) const { return get(halfedge_are_creases_, hd); }
   void set_halfedge_is_crease(halfedge_descriptor hd, bool value) { put(halfedge_are_creases_, hd, value); }
 
+  //Halfedge_link_list& get_all_halfedge_out_links() { return  halfedge_out_links_; }
   Link_list& get_halfedge_out_links(halfedge_descriptor hd) { return get(halfedge_out_links_, hd); }
   const Link_list& get_halfedge_out_links(halfedge_descriptor hd) const { return get(halfedge_out_links_, hd); }
   void set_halfege_out_links(halfedge_descriptor hd, const Link_list &value) { put(halfedge_out_links_, hd, value); }
 
+  //Vertex_tags& get_all_vertex_tags() { return vertex_tags_; }
   int& get_vertex_tag(vertex_descriptor vd) { return get(vertex_tags_, vd); }
   const int& get_vertex_tag(vertex_descriptor vd) const { return get(vertex_tags_, vd); }
   void set_vertex_tag(vertex_descriptor vd, int value) { put(vertex_tags_, vd, value); }
 
+  // Vertex_max_dihedral& get_all_vertex_max_dihedral() { return vertex_max_dihedrals_; }
   FT& get_vertex_max_dihedral(vertex_descriptor vd) { return get(vertex_max_dihedrals_, vd); }
   const FT& get_vertex_max_dihedral(vertex_descriptor vd) const { return get(vertex_max_dihedrals_, vd); }
   void set_vertex_max_dihedral(vertex_descriptor vd, FT value) { put(vertex_max_dihedrals_, vd, value); }
-
+  
+  //Vertex_gaussian_curvature& get_all_vertex_gaussian_curvatures() { return vertex_gaussian_curvatures_; }
   FT& get_vertex_gaussian_curvature(vertex_descriptor vd) { return get(vertex_gaussian_curvatures_, vd); }
   const FT& get_vertex_gaussian_curvature(vertex_descriptor vd) const { return get(vertex_gaussian_curvatures_, vd); }
   void set_vertex_gaussian_curvature(vertex_descriptor vd, FT value) { put(vertex_gaussian_curvatures_, vd, value); }
 
+  //Vertex_link& get_all_vertex_out_links() { return vertex_out_link_; }
   Link& get_vertex_out_link(vertex_descriptor vd) { return get(vertex_out_link_, vd); }
   const Link& get_vertex_out_link(vertex_descriptor vd) const { return get(vertex_out_link_, vd); }
   void set_vertex_out_link(vertex_descriptor vd, const Link &value) { put(vertex_out_link_, vd, value); }
@@ -3809,78 +3891,6 @@ public:
   }
   
 private:
-  bool is_border(halfedge_descriptor hd) const { return mesh_.is_border(hd); }
-
-  void clear_face_links(face_descriptor fd) {
-    set_face_out_links(fd, Link_list());
-    set_face_in_links(fd, Link_iter_list());
-    set_edge_in_links(fd, Link_iter_list());
-    set_vertex_in_links(fd, Link_pointer_list());
-  }
-
-  void clear_halfedge_links(halfedge_descriptor hd) {
-    set_halfege_out_links(hd, Link_list());
-  }
-
-  void clear_vertex_links(vertex_descriptor vd) {
-    set_vertex_out_link(vd, Link());
-  }
-
-  // properties access
-  void reset_face_properties(face_descriptor fd, face_descriptor fd_source) {
-    // step 1: reset the basic properties
-    if (fd_source == get_null_face()) {
-      set_face_tag(fd, 0);
-      set_face_normal(fd, CGAL::NULL_VECTOR);
-      set_face_max_squared_error(fd, 0.0);
-    }
-    else {
-      set_face_tag(fd, get_face_tag(fd_source));
-      set_face_normal(fd, get_face_normal(fd_source));
-      set_face_max_squared_error(fd, get_face_max_squared_error(fd_source));
-    }
-    // step 2: reset the sample links
-    clear_face_links(fd);
-  }
-
-  void reset_halfedge_properties(halfedge_descriptor hd,
-    halfedge_descriptor hd_source) {
-    // step 1: reset the basic properties
-    if (hd_source == get_null_halfedge()) {
-      set_halfedge_tag(hd, 0);
-      set_halfedge_normal_dihedral(hd, -1.0);
-      set_halfedge_is_crease(hd, false);
-    }
-    else {
-      set_halfedge_tag(hd, get_halfedge_tag(hd_source));
-      set_halfedge_normal_dihedral(hd, get_halfedge_normal_dihedral(hd_source));
-      set_halfedge_is_crease(hd, get_halfedge_is_crease(hd_source));
-    }
-    // step 2: reset the sample links
-    clear_halfedge_links(hd);
-  }
-
-  void reset_vertex_properties(vertex_descriptor vd,
-    vertex_descriptor vd_source) {
-    // step 1: reset the basic properties
-    if (vd_source == get_null_vertex()) {
-      set_vertex_tag(vd, 0);
-      set_vertex_max_dihedral(vd, -1.0);
-      set_vertex_gaussian_curvature(vd, 0.0);
-    }
-    else {
-      set_vertex_tag(vd, get_vertex_tag(vd_source));
-      set_vertex_max_dihedral(vd, get_vertex_max_dihedral(vd_source));
-      set_vertex_gaussian_curvature(vd, get_vertex_gaussian_curvature(vd_source));
-    }
-    // step 2: reset the sample links 
-    clear_vertex_links(vd);
-  }
-
-  
-
-
-
   // sample and links
   void clear_local_in_links(std::set<face_descriptor> *faces) {
     for (auto it = faces->begin(); it != faces->end(); ++it) {
@@ -4730,7 +4740,6 @@ private:
 
 private:
   Mesh &mesh_;
-
   Face_tags face_tags_;                         // face related properties
   Face_normals face_normals_;
   Face_max_errors face_max_squared_errors_;
@@ -4738,12 +4747,10 @@ private:
   Face_link_iter_list face_in_links_;
   Face_link_iter_list edge_in_links_;
   Face_link_pointer_list vertex_in_links_;
-
   Halfedge_tags halfedge_tags_;                 // halfedge related properties
   Halfedge_normal_dihedrals halfedge_normal_dihedrals_;
   Halfedge_are_creases halfedge_are_creases_;
   Halfedge_link_list halfedge_out_links_;
-
   Vertex_tags vertex_tags_;                     // vertex related properties
   Vertex_max_dihedral vertex_max_dihedrals_;
   Vertex_gaussian_curvature vertex_gaussian_curvatures_;

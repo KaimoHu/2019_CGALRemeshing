@@ -2,15 +2,12 @@
 #define CGAL_MAINWINDOW_H
 
 // Qt
-#include <QtOpenGL/qgl.h>
+//#include <QtOpenGL/qgl.h>
 #include <CGAL/Qt/DemosMainWindow.h>
 // local
 #include "Scene.h"
 
-//class QDragEnterEvent;
-//class QDropEvent;
-//class Scene;
-class Viewer;
+//class Viewer;
 namespace Ui {
   class MainWindow;
 }
@@ -57,7 +54,6 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionFile_open_input_triggered();
   void on_actionFile_open_remesh_triggered();
   void on_actionFile_save_remesh_as_triggered();
-  void on_actionFile_open_Surface_mesh_triggered();
 
   // edit menu
   void on_actionEdit_copy_snapshot_triggered();
@@ -69,7 +65,7 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionInput_properties_triggered();
 
   // isotropic remeshing menu
-  void on_actionIsotropic_split_border_triggered();
+  void on_actionIsotropic_split_borders_triggered();
   void on_actionIsotropic_remeshing_triggered();
   void on_actionIsotropic_parameter_settings_triggered();
 
@@ -89,11 +85,11 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionView_input_triggered();                           // input
   void on_actionView_remesh_triggered();                          // remesh
   void on_actionView_toggle_input_remesh_triggered();
-  void on_actionView_polyhedron_edges_triggered();                // polyhedron edges
-  void on_actionView_minimal_angle_triggered();                   // polyhedron facet properties
-  void on_actionView_polyhedron_facets_plain_triggered();
-  void on_actionView_polyhedron_facets_ifi_triggered();
-  void on_actionView_polyhedron_facets_errors_triggered();
+  void on_actionView_mesh_edges_triggered();                      // surface mesh edges
+  void on_actionView_minimal_angle_triggered();                   // surface mesh face properties
+  void on_actionView_mesh_faces_plain_triggered();
+  void on_actionView_mesh_faces_ifi_triggered();
+  void on_actionView_mesh_faces_errors_triggered();
   void on_actionView_all_sample_feature_intensities_triggered();  // all samples properties
   void on_actionView_all_sample_capacities_triggered();
   void on_actionView_all_sample_weights_triggered();
@@ -107,30 +103,30 @@ class MainWindow : public CGAL::Qt::DemosMainWindow {
   void on_actionView_edge_feature_intensities_triggered();        
   void on_actionView_edge_capacities_triggered();
   void on_actionView_edge_weights_triggered();
-  void on_actionView_facet_feature_intensities_triggered();       // facet samples properties
-  void on_actionView_facet_capacities_triggered();
-  void on_actionView_facet_weights_triggered();
-  void on_actionView_facet_in_start_points_triggered();   // facet in links
-  void on_actionView_facet_in_end_points_triggered();
-  void on_actionView_facet_in_links_triggered();
-  void on_actionView_facet_out_start_points_triggered();  // facet out links
-  void on_actionView_facet_out_end_points_triggered();
-  void on_actionView_facet_out_links_triggered();
-  void on_actionView_edge_in_start_points_triggered();    // edge in links
+  void on_actionView_face_feature_intensities_triggered();        // face samples properties
+  void on_actionView_face_capacities_triggered();
+  void on_actionView_face_weights_triggered();
+  void on_actionView_face_in_start_points_triggered();            // face in links
+  void on_actionView_face_in_end_points_triggered();
+  void on_actionView_face_in_links_triggered();
+  void on_actionView_face_out_start_points_triggered();           // face out links
+  void on_actionView_face_out_end_points_triggered();
+  void on_actionView_face_out_links_triggered();
+  void on_actionView_edge_in_start_points_triggered();            // edge in links
   void on_actionView_edge_in_end_points_triggered();
   void on_actionView_edge_in_links_triggered();
-  void on_actionView_edge_out_start_points_triggered();   // edge out links
+  void on_actionView_edge_out_start_points_triggered();           // edge out links
   void on_actionView_edge_out_end_points_triggered();
   void on_actionView_edge_out_links_triggered();
-  void on_actionView_vertex_in_start_points_triggered();  // vertex in links
+  void on_actionView_vertex_in_start_points_triggered();          // vertex in links
   void on_actionView_vertex_in_end_points_triggered();
   void on_actionView_vertex_in_links_triggered();
-  void on_actionView_vertex_out_start_points_triggered(); // vertex out links
+  void on_actionView_vertex_out_start_points_triggered();         // vertex out links
   void on_actionView_vertex_out_end_points_triggered();
   void on_actionView_vertex_out_links_triggered();
 
 private:
-  void open(QString file_name, bool is_surface_mesh, OpenType open_type);
+  void open(QString file_name, OpenType open_type);
   void update_menu_items();
 
 private:

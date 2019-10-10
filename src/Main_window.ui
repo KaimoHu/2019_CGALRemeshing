@@ -64,21 +64,19 @@
     <addaction name="actionFile_open_remesh"/>
     <addaction name="actionFile_save_remesh_as"/>
     <addaction name="separator"/>
-    <addaction name="actionFile_open_Surface_mesh"/>
-    <addaction name="separator"/>
     <addaction name="actionFile_quit"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menuView_facet_sample_properties">
+    <widget class="QMenu" name="menuView_face_sample_properties">
      <property name="title">
-      <string>Facet sample properties</string>
+      <string>Face sample properties</string>
      </property>
-     <addaction name="actionView_facet_feature_intensities"/>
-     <addaction name="actionView_facet_capacities"/>
-     <addaction name="actionView_facet_weights"/>
+     <addaction name="actionView_face_feature_intensities"/>
+     <addaction name="actionView_face_capacities"/>
+     <addaction name="actionView_face_weights"/>
     </widget>
     <widget class="QMenu" name="menuView_all_sample_properties">
      <property name="title">
@@ -104,20 +102,20 @@
      <addaction name="actionView_edge_capacities"/>
      <addaction name="actionView_edge_weights"/>
     </widget>
-    <widget class="QMenu" name="menuView_polyhedron_properties">
+    <widget class="QMenu" name="menuView_surface_mesh_properties">
      <property name="title">
-      <string>Polyhedron properties</string>
+      <string>Surface mesh properties</string>
      </property>
      <widget class="QMenu" name="menuView_samples_and_links">
       <property name="title">
        <string>Samples and links</string>
       </property>
-      <addaction name="actionView_facet_in_start_points"/>
-      <addaction name="actionView_facet_in_end_points"/>
-      <addaction name="actionView_facet_in_links"/>
-      <addaction name="actionView_facet_out_start_points"/>
-      <addaction name="actionView_facet_out_end_points"/>
-      <addaction name="actionView_facet_out_links"/>
+      <addaction name="actionView_face_in_start_points"/>
+      <addaction name="actionView_face_in_end_points"/>
+      <addaction name="actionView_face_in_links"/>
+      <addaction name="actionView_face_out_start_points"/>
+      <addaction name="actionView_face_out_end_points"/>
+      <addaction name="actionView_face_out_links"/>
       <addaction name="separator"/>
       <addaction name="actionView_edge_in_start_points"/>
       <addaction name="actionView_edge_in_end_points"/>
@@ -135,8 +133,8 @@
      </widget>
      <addaction name="actionView_minimal_angle"/>
      <addaction name="separator"/>
-     <addaction name="actionView_polyhedron_facets_plain"/>
-     <addaction name="actionView_polyhedron_facets_errors"/>
+     <addaction name="actionView_mesh_faces_plain"/>
+     <addaction name="actionView_mesh_faces_errors"/>
      <addaction name="separator"/>
      <addaction name="menuView_samples_and_links"/>
     </widget>
@@ -144,7 +142,7 @@
      <property name="title">
       <string>Feature intensities</string>
      </property>
-     <addaction name="actionView_polyhedron_facets_ifi"/>
+     <addaction name="actionView_mesh_faces_ifi"/>
      <addaction name="actionView_element_classifications"/>
      <addaction name="separator"/>
      <addaction name="actionView_gaussian_curvatures"/>
@@ -156,15 +154,14 @@
     <addaction name="actionView_remesh"/>
     <addaction name="actionView_toggle_input_remesh"/>
     <addaction name="separator"/>
-    <addaction name="actionView_polyhedron_edges"/>
+    <addaction name="actionView_mesh_edges"/>
     <addaction name="menuView_feature_intensities"/>
-    <addaction name="menuView_polyhedron_properties"/>
+    <addaction name="menuView_surface_mesh_properties"/>
     <addaction name="separator"/>
     <addaction name="menuView_all_sample_properties"/>
     <addaction name="menuView_vertex_sample_properties"/>
     <addaction name="menuView_edge_sample_properties"/>
-    <addaction name="menuView_facet_sample_properties"/>
-    <addaction name="separator"/>
+    <addaction name="menuView_face_sample_properties"/>
    </widget>
    <widget class="QMenu" name="menuInput">
     <property name="title">
@@ -179,7 +176,7 @@
     <property name="title">
      <string>Isotropic Remeshing</string>
     </property>
-    <addaction name="actionIsotropic_split_border"/>
+    <addaction name="actionIsotropic_split_borders"/>
     <addaction name="actionIsotropic_remeshing"/>
     <addaction name="separator"/>
     <addaction name="actionIsotropic_parameter_settings"/>
@@ -301,52 +298,52 @@
     <string>Properties...</string>
    </property>
   </action>
-  <action name="actionView_facet_in_start_points">
+  <action name="actionView_face_in_start_points">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet in start points</string>
+    <string>Face in start points</string>
    </property>
   </action>
-  <action name="actionView_facet_in_end_points">
+  <action name="actionView_face_in_end_points">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet in end points</string>
+    <string>Face in end points</string>
    </property>
   </action>
-  <action name="actionView_facet_in_links">
+  <action name="actionView_face_in_links">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet in links</string>
+    <string>Face in links</string>
    </property>
   </action>
-  <action name="actionView_facet_out_start_points">
+  <action name="actionView_face_out_start_points">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet out start points</string>
+    <string>Face out start points</string>
    </property>
   </action>
-  <action name="actionView_facet_out_end_points">
+  <action name="actionView_face_out_end_points">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet out end points</string>
+    <string>Face out end points</string>
    </property>
   </action>
-  <action name="actionView_facet_out_links">
+  <action name="actionView_face_out_links">
    <property name="checkable">
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Facet out links</string>
+    <string>Face out links</string>
    </property>
   </action>
   <action name="actionView_edge_in_start_points">
@@ -477,7 +474,7 @@
     <string>Vertex maximal normal dihedrals</string>
    </property>
   </action>
-  <action name="actionView_polyhedron_facets_ifi">
+  <action name="actionView_mesh_faces_ifi">
    <property name="text">
     <string>Interpolated feature intensities</string>
    </property>
@@ -517,17 +514,17 @@
     <string>Weights</string>
    </property>
   </action>
-  <action name="actionView_facet_feature_intensities">
+  <action name="actionView_face_feature_intensities">
    <property name="text">
     <string>Feature intensities</string>
    </property>
   </action>
-  <action name="actionView_facet_capacities">
+  <action name="actionView_face_capacities">
    <property name="text">
     <string>Capacities</string>
    </property>
   </action>
-  <action name="actionView_facet_weights">
+  <action name="actionView_face_weights">
    <property name="text">
     <string>Weights</string>
    </property>
@@ -547,7 +544,7 @@
     <string>Weights</string>
    </property>
   </action>
-  <action name="actionView_polyhedron_facets_plain">
+  <action name="actionView_mesh_faces_plain">
    <property name="text">
     <string>Plain</string>
    </property>
@@ -560,7 +557,7 @@
     <string>Element classifications</string>
    </property>
   </action>
-  <action name="actionView_polyhedron_edges">
+  <action name="actionView_mesh_edges">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -568,7 +565,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Polyhedron edges</string>
+    <string>Surface mesh edges</string>
    </property>
    <property name="shortcut">
     <string>E</string>
@@ -610,9 +607,9 @@
     <string>Min angle remeshing</string>
    </property>
   </action>
-  <action name="actionView_polyhedron_facets_errors">
+  <action name="actionView_mesh_faces_errors">
    <property name="text">
-    <string>Facet errors</string>
+    <string>Face errors</string>
    </property>
   </action>
   <action name="actionFile_open_input">
@@ -635,9 +632,9 @@
     <string>Open Surface mesh...</string>
    </property>
   </action>
-  <action name="actionIsotropic_split_border">
+  <action name="actionIsotropic_split_borders">
    <property name="text">
-    <string>Split border</string>
+    <string>Split borders</string>
    </property>
   </action>
   <action name="actionIsotropic_remeshing">
