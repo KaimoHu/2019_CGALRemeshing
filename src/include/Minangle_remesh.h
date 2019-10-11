@@ -141,11 +141,11 @@ public:
   }
 
   // public functions
-  void set_input(Mesh &input, bool verbose_progress) {
+  void set_input(Mesh &input, bool verbose_progress) const {
     remesher_->set_input(input, verbose_progress);
   }
 
-  void set_remesh(Mesh &remesh, bool verbose_progress) {
+  void set_remesh(Mesh &remesh, bool verbose_progress) const {
     remesher_->set_remesh(remesh, verbose_progress);
   }
 
@@ -153,31 +153,31 @@ public:
     remesher_->save_remesh_as(file_name);
   }
 
-  void delete_input() { remesher_->delete_input(); }
+  void delete_input() const { remesher_->delete_input(); }
 
-  void delete_remesh() { remesher_->delete_remesh(); }
+  void delete_remesh() const { remesher_->delete_remesh(); }
 
-  void generate_samples_and_links() {
+  void generate_samples_and_links() const {
     remesher_->generate_samples_and_links(); 
   }
 
-  void minangle_remeshing() {
+  void minangle_remeshing() const {
     remesher_->minangle_remeshing();
   }
 
-  void initial_mesh_simplification() {
+  void initial_mesh_simplification() const {
     remesher_->initial_mesh_simplification();
   }
 
-  void increase_minimal_angle() {
+  void increase_minimal_angle() const {
     remesher_->increase_minimal_angle();
   }
 
-  void maximize_minimal_angle() {
+  void maximize_minimal_angle() const {
     remesher_->maximize_minimal_angle();
   }
 
-  void final_vertex_relocation() {
+  void final_vertex_relocation() const {
     remesher_->final_vertex_relocation();
   }
 

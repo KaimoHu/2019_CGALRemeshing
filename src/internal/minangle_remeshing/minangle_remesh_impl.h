@@ -301,7 +301,7 @@ public:
 
   const Mesh_properties* get_remesh() const { return remesh_; }
 
-  void input_properties() {
+  void input_properties() const {
     std::cout << std::endl;
     std::cout << yellow << "INPUT PROPERTIES" << white << std::endl;
     input_->trace_properties();
@@ -390,11 +390,11 @@ public:
   }
 
   // polyhedron manipulations
-  int eliminate_input_degenerated_faces() {
+  int eliminate_input_degenerated_faces() const {
     return input_->eliminate_degenerated_faces();
   }
 
-  int split_input_long_edges() {
+  int split_input_long_edges() const {
     return input_->split_long_edges();
   }
 
@@ -966,7 +966,7 @@ private:
       Halfedge_list *halfedges, halfedge_descriptor hh, bool is_ring,
       Link_iter_list *face_in_links, Link_iter_list *edge_in_links,
       Link_pointer_list *vertex_in_links, FT *error, FT *radian,
-      Point *new_point) {
+      Point *new_point) const {
     // step 1: construct the local_mesh
     Mesh local_mesh;
     vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
@@ -1050,7 +1050,6 @@ private:
   // 2) the collapse operator
   Visit_list collapsed_list_;
   std::map<Point, std::map<FT, Visit_iter>, Point_Comp> collapsed_map_;
-  //std::map<Point, std::map<FT, Visit_iter>> collapsed_map_;
 
   // 3) member data and properties
   Mesh_properties *input_, *remesh_;

@@ -310,7 +310,7 @@ public:
 
 
   // temp
-  size_t size_of_vertices() { return mesh_.number_of_vertices(); }
+  size_t size_of_vertices() const { return mesh_.number_of_vertices(); }
   
 
 
@@ -327,7 +327,7 @@ public:
 
   face_descriptor get_face(halfedge_descriptor hd) const { return mesh_.face(hd); }
 
-  void get_all_faces(Face_list *faces) {
+  void get_all_faces(Face_list *faces) const {
     for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       faces->push_back(*fi);
@@ -336,7 +336,7 @@ public:
 
   inline face_descriptor get_null_face() const { return mesh_.null_face(); }
 
-  void get_all_halfedges(Halfedge_list *halfedges) {
+  void get_all_halfedges(Halfedge_list *halfedges) const {
     for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       halfedges->push_back(*hi);
@@ -345,7 +345,7 @@ public:
 
   inline halfedge_descriptor get_null_halfedge() const { return mesh_.null_halfedge(); }
 
-  void get_all_edges(Edge_list *edges) {
+  void get_all_edges(Edge_list *edges) const {
     for (Mesh::Edge_range::iterator ei = mesh_.edges().begin(); 
         ei != mesh_.edges().end(); ++ei) {
       edges->push_back(*ei);
@@ -354,7 +354,7 @@ public:
 
   inline edge_descriptor get_null_edge() const { return mesh_.null_edge(); }
 
-  void get_all_vertices(Vertex_list *vertices) {
+  void get_all_vertices(Vertex_list *vertices) const {
     for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
         vi != mesh_.vertices().end(); ++vi) {
       vertices->push_back(*vi);
@@ -593,7 +593,7 @@ public:
     }
   }
 
-  halfedge_descriptor calculate_maximal_error(FT *max_error) {
+  halfedge_descriptor calculate_maximal_error(FT *max_error) const {
     Mesh::Face_range::iterator fi = mesh_.faces().begin();
     face_descriptor max_error_face = *fi;
     FT max_se = get_face_max_squared_error(max_error_face), se = 0.0;
@@ -610,7 +610,7 @@ public:
   }
 
   halfedge_descriptor calculate_local_maximal_error(
-      const std::set<face_descriptor> &faces, FT *max_error) {
+      const std::set<face_descriptor> &faces, FT *max_error) const {
     assert(!faces.empty());
     std::set<face_descriptor>::const_iterator cit = faces.cbegin();
     face_descriptor max_error_fd = *cit;
@@ -820,7 +820,7 @@ public:
 
   void generate_random_samples(bool use_stratified_sampling, int nb_samples,
       int bvd_iteration_count_value, face_descriptor fd,
-      Point_list *inner_samples, std::list<double> *feature_weights) {
+      Point_list *inner_samples, std::list<double> *feature_weights) const {
     // step 1: generate the samples
     inner_samples->clear();
     feature_weights->clear();
@@ -1048,7 +1048,7 @@ public:
       std::map<halfedge_descriptor, Link_list> *edge_out_map,
       Link *vertex_out, Link_iter_list *face_in_links,
       Link_iter_list *edge_in_links, Link_pointer_list *vertex_in_links,
-      vertex_descriptor vd) {
+      vertex_descriptor vd) const {
     // step 1: backup the out links
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
@@ -1076,7 +1076,7 @@ public:
   void backup_local_in_links(const std::set<face_descriptor> &extended_faces,
       Link_iter_list *face_in_links, Point_list *face_in_end_points,
       Link_iter_list *edge_in_links, Point_list *edge_in_end_points,
-      Link_pointer_list *vertex_in_links, Point_list *vertex_in_end_points) {
+      Link_pointer_list *vertex_in_links, Point_list *vertex_in_end_points) const {
     // step 1: backup the in link iterations
     backup_local_in_links(extended_faces, face_in_links, edge_in_links,
                           vertex_in_links);
@@ -1100,7 +1100,7 @@ public:
 
   void backup_local_in_links(const std::set<face_descriptor> &extended_faces,
       Link_iter_list *face_in_links, Link_iter_list *edge_in_links, 
-      Link_pointer_list *vertex_in_links) {
+      Link_pointer_list *vertex_in_links) const {
     for (auto it = extended_faces.begin(); it != extended_faces.end(); ++it) {
       face_descriptor fd = *it;
       // backup face in links
@@ -2090,7 +2090,7 @@ public:
   }
 
   bool predict_faces_after_collapse(halfedge_descriptor hd, 
-                                   Halfedge_list *halfedges) {
+                                   Halfedge_list *halfedges) const {
     // return whether faces compose a ring, halfedges are inserted in order
     // we use the halfedges to represent the faces
     vertex_descriptor vp = get_source_vertex(hd);
@@ -2232,7 +2232,7 @@ public:
       const std::set<face_descriptor> &one_ring_faces,
       const std::set<face_descriptor> &extended_faces,
       Halfedge_list *halfedges, const Point &new_point, bool is_ring,
-      Mesh *mesh) {
+      Mesh *mesh) const {
     // construct the 2-manifold surface_mesh
     // step 1: build the point to index map
     std::map<Point, size_t, Point_Comp> points_map;
@@ -2572,7 +2572,7 @@ public:
 
   // relocate
   bool relocate_would_cause_wrinkle(const Point &new_point, 
-                                    vertex_descriptor vd) {
+                                    vertex_descriptor vd) const {
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
       if (!is_border(*hb)) {
@@ -2688,7 +2688,7 @@ public:
   }
 
   Point calculate_initial_point_for_relocate(const Face_tree &face_tree,
-    vertex_descriptor vd, const NamedParameters &np) {
+    vertex_descriptor vd, const NamedParameters &np) const {
     FT sum_area = 0.0;
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
@@ -3437,65 +3437,6 @@ public:
     }
   }
 
-  void trace_properties() {
-    std::cout << mesh_.number_of_vertices() << " vertices" << std::endl;
-    std::cout << mesh_.number_of_faces() << " faces" << std::endl;
-    std::cout << mesh_.number_of_edges() << " edges" << std::endl;
-    std::cout << nb_boundaries() << " boundary(ies)" << std::endl;
-    std::cout << nb_components() << " component(s)" << std::endl;
-    trace_edge_length();
-  }
-
-  void trace_additional_properties(FT diagonal_length) {
-    if (mesh_.number_of_faces() == 0) {
-      return;
-    }
-    FT min_face_area = DOUBLE_MAX;
-    FT max_squared_error = 0.0;
-    FT min_radian = CGAL_PI;
-    FT max_radian = 0.0;
-    FT avg_min_radian = 0.0;
-    size_t min_out_link_count = MAX_VALUE;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
-        fi != mesh_.faces().end(); ++fi) {
-      FT face_area = area(*fi);
-      min_face_area = CGAL::min(min_face_area, face_area);
-      const Link_list &face_out_links = get_face_out_links(*fi);
-      min_out_link_count = CGAL::min(min_out_link_count, 
-                                     face_out_links.size());
-      max_squared_error = CGAL::max(max_squared_error,
-                                    get_face_max_squared_error(*fi));
-      FT smallest_radian = calculate_smallest_radian(*fi);
-      min_radian = CGAL::min(min_radian, smallest_radian);
-      avg_min_radian += smallest_radian;
-      FT largest_radian = calculate_largest_radian(*fi);
-      max_radian = CGAL::max(max_radian, largest_radian);
-    }
-    avg_min_radian /= mesh_.number_of_faces();
-    FT rms_error = calculate_rms_distance();
-    FT max_error = CGAL::sqrt(max_squared_error);
-    //FT diagonal_length = get_diagonal_length();
-    std::cout << "Minimal quality: " << calculate_min_quality() << std::endl;
-    std::cout << "Average quality: " << calculate_avg_quality() << std::endl;
-    std::cout << "Minimal angle: " << to_angle(min_radian) << std::endl;
-    std::cout << "Average minimal angle: "
-              << to_angle(avg_min_radian) << std::endl;
-    std::cout << "Maximal angle: " << to_angle(max_radian) << std::endl;
-    std::cout << "Maximal error: " << max_error << std::endl;
-    std::cout << "Maximal error ratio: "
-              << max_error / diagonal_length * 100 << "%" << std::endl;
-    std::cout << "RMS face error " << rms_error << std::endl;
-    std::cout << "RMS face error ratio: "
-              << rms_error / diagonal_length * 100 << "%" << std::endl;
-    std::cout << "Angles smaller than 30бу: "
-              << calculate_smaller_angle_ratio(30.0) * 100 << "%" << std::endl;
-    std::cout << "Regular vertices ratio: "
-              << calculate_regular_vertex_ratio() * 100 << "%" << std::endl;
-    std::cout << "Minimal face area: " << min_face_area << std::endl;
-    std::cout << "Minimal face out link count: "
-              << min_out_link_count << std::endl;
-  }
-
   int get_face_out_link_count() const {
     size_t face_out_link_count = 0;
     for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
@@ -3522,6 +3463,65 @@ public:
 
   int get_vertex_out_link_count() const {
     return static_cast<int>(mesh_.number_of_vertices());
+  }
+
+  void trace_properties() {
+    std::cout << mesh_.number_of_vertices() << " vertices" << std::endl;
+    std::cout << mesh_.number_of_faces() << " faces" << std::endl;
+    std::cout << mesh_.number_of_edges() << " edges" << std::endl;
+    std::cout << nb_boundaries() << " boundary(ies)" << std::endl;
+    std::cout << nb_components() << " component(s)" << std::endl;
+    trace_edge_length();
+  }
+
+  void trace_additional_properties(FT diagonal_length) {
+    if (mesh_.number_of_faces() == 0) {
+      return;
+    }
+    FT min_face_area = DOUBLE_MAX;
+    FT max_squared_error = 0.0;
+    FT min_radian = CGAL_PI;
+    FT max_radian = 0.0;
+    FT avg_min_radian = 0.0;
+    size_t min_out_link_count = MAX_VALUE;
+    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+      fi != mesh_.faces().end(); ++fi) {
+      FT face_area = area(*fi);
+      min_face_area = CGAL::min(min_face_area, face_area);
+      const Link_list &face_out_links = get_face_out_links(*fi);
+      min_out_link_count = CGAL::min(min_out_link_count,
+        face_out_links.size());
+      max_squared_error = CGAL::max(max_squared_error,
+        get_face_max_squared_error(*fi));
+      FT smallest_radian = calculate_smallest_radian(*fi);
+      min_radian = CGAL::min(min_radian, smallest_radian);
+      avg_min_radian += smallest_radian;
+      FT largest_radian = calculate_largest_radian(*fi);
+      max_radian = CGAL::max(max_radian, largest_radian);
+    }
+    avg_min_radian /= mesh_.number_of_faces();
+    FT rms_error = calculate_rms_distance();
+    FT max_error = CGAL::sqrt(max_squared_error);
+    //FT diagonal_length = get_diagonal_length();
+    std::cout << "Minimal quality: " << calculate_min_quality() << std::endl;
+    std::cout << "Average quality: " << calculate_avg_quality() << std::endl;
+    std::cout << "Minimal angle: " << to_angle(min_radian) << std::endl;
+    std::cout << "Average minimal angle: "
+      << to_angle(avg_min_radian) << std::endl;
+    std::cout << "Maximal angle: " << to_angle(max_radian) << std::endl;
+    std::cout << "Maximal error: " << max_error << std::endl;
+    std::cout << "Maximal error ratio: "
+      << max_error / diagonal_length * 100 << "%" << std::endl;
+    std::cout << "RMS face error " << rms_error << std::endl;
+    std::cout << "RMS face error ratio: "
+      << rms_error / diagonal_length * 100 << "%" << std::endl;
+    std::cout << "Angles smaller than 30бу: "
+      << calculate_smaller_angle_ratio(30.0) * 100 << "%" << std::endl;
+    std::cout << "Regular vertices ratio: "
+      << calculate_regular_vertex_ratio() * 100 << "%" << std::endl;
+    std::cout << "Minimal face area: " << min_face_area << std::endl;
+    std::cout << "Minimal face out link count: "
+      << min_out_link_count << std::endl;
   }
 
   // IO
@@ -3876,10 +3876,6 @@ private:
     // step 2: reset the sample links 
     clear_vertex_links(vd);
   }
-
-  
-
-
 
   // sample and links
   void clear_local_in_links(std::set<face_descriptor> *faces) {
@@ -4561,108 +4557,6 @@ private:
     } while (hb != he);
     return true;
   }
-
-  /*bool join_faces_before_collapse(halfedge_descriptor hd) {
-    assert(!is_border(hd));
-    if (is_border(get_opposite(hd))) {
-      return join_faces_before_collapse_boundary_case(hd);
-    }
-    else {
-      return join_faces_before_collapse_inner_case(hd);
-    }
-  }
-
-  bool join_faces_before_collapse_inner_case(halfedge_descriptor hd) {
-
-    halfedge_descriptor qr = mesh_.next(hd);
-    halfedge_descriptor rp = mesh_.prev(hd);
-    halfedge_descriptor ps = mesh_.next(get_opposite(hd));
-    halfedge_descriptor sq = mesh_.prev(get_opposite(hd));
-    face_descriptor frq = get_face(get_opposite(qr));
-    face_descriptor fpr = get_face(get_opposite(rp));
-    face_descriptor fsp = get_face(get_opposite(ps));
-    face_descriptor fqs = get_face(get_opposite(sq));
-    // check if faces are different
-    if (valid_join_face_pair(fsp, frq)) {
-      if (valid_join_face(ps) && valid_join_face(qr)) {
-        CGAL::Euler::join_face(ps, mesh_);
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fsp, fpr)) {
-      if (valid_join_face(ps) && valid_join_face(rp)) {
-        CGAL::Euler::join_face(ps, mesh_);
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fqs, frq)) {
-      if (valid_join_face(sq) && valid_join_face(qr)) {
-        CGAL::Euler::join_face(sq, mesh_);
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fqs, fpr)) {
-      if (valid_join_face(sq) && valid_join_face(rp)) {
-        CGAL::Euler::join_face(sq, mesh_);
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    std::cerr << red << "join faces failed." << white << std::endl;
-    return false;
-  }
-
-  bool join_faces_before_collapse_boundary_case(halfedge_descriptor hd) {
-    CGAL_precondition(is_border(get_opposite(hd)));
-    halfedge_descriptor qr = mesh_.next(hd);
-    halfedge_descriptor rp = mesh_.next(mesh_.next(hd));
-    face_descriptor frq = get_face(get_opposite(qr));
-    face_descriptor fpr = get_face(get_opposite(rp));
-    if (frq != mesh_.null_face()) {
-      if (valid_join_face(qr)) {
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    else if (fpr != mesh_.null_face()) {
-      if (valid_join_face(rp)) {
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    // should never come here
-    std::cerr << red << "Error in join faces in boundary case" 
-              << white << std::endl;
-    return false;
-  }
-
-  bool valid_join_face_pair(face_descriptor fd1, face_descriptor fd2) const {
-    if (fd1 == fd2) {
-      return false;
-    }
-    if (fd1 == mesh_.null_face()) {
-      return false;
-    }
-    if (fd2 == mesh_.null_face()) {
-      return false;
-    }
-    return true;
-  }
-
-  bool valid_join_face(halfedge_descriptor hd) const {
-    Halfedge_around_face_circulator h1(hd, mesh_);
-    if (circulator_size(h1) < 3) {
-      return false;
-    }
-    Halfedge_around_face_circulator h2(get_opposite(hd), mesh_);
-    if (circulator_size(h2) < 3) {
-      return false;
-    }
-    return true;
-  }*/
 
   bool edge_flip_would_improve_valence(halfedge_descriptor hd) const {
     // incident vertices
