@@ -46,6 +46,27 @@ typedef Minangle_remesher::Link_pointer_const_iter Link_pointer_const_iter;
 typedef Mesh_properties::Bvd Bvd;
 typedef Mesh_properties::Halfedge_around_target_circulator Halfedge_around_target_circulator;
 
+enum DrawType {
+  k_mesh = 0,
+  k_all_voronoi,
+  k_vertex_voronoi,
+  k_edge_voronoi,
+  k_face_voronoi
+};
+
+enum RenderType {
+  k_plain_faces = 0, // faces with plain color
+  k_ifi_faces,       // faces with interpolated feature intensity colors
+  k_mr_faces,
+  k_classifications,  // vertex type (feature, crease, smooth)
+  k_gaussian_curvature,
+  k_maximal_halfedge_dihedral,
+  k_normal_dihedral,
+  k_feature_intensity,
+  k_capacity,
+  k_weight
+};
+
 struct halfedge2edge {
   halfedge2edge(const Mesh &mesh, std::vector<edge_descriptor> &edges)
   : m_mesh(mesh), m_edges(edges) {

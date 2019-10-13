@@ -262,14 +262,10 @@ public:
   bool get_optimize_after_local_operations() const { return np_.optimize_after_local_operations; }
   void set_optimize_after_local_operations(bool value) { np_.optimize_after_local_operations = value; }
 
-  // 3) data access
+  // 3) member data access
   Bbox get_input_bbox() const { return input_bbox; }
-  Mesh_properties* get_input_properties() const { return input_; }
-  Mesh_properties* get_remesh_properties() const { return remesh_; }
   const NamedParameters &get_named_parameters() const { return np_; }
   bool get_links_initialized() const { return links_initialized_; }
-
-  // 4) mesh properties
   void set_input(Mesh &input, bool verbose_progress) {
     // step 1: set the input
     delete_input();
@@ -282,11 +278,8 @@ public:
     // step 4: update status
     input_aabb_tree_constructed_ = false;
   }
-
   Mesh_properties* get_input() { return input_; }
-
   const Mesh_properties* get_input() const { return input_; }
-
   void set_remesh(Mesh &remesh, bool verbose_progress) {
     // step 1: set the remesh
     delete_remesh();
@@ -296,17 +289,43 @@ public:
     // step 3: update feature intensities and clear links
     calculate_feature_intensities(false, true, verbose_progress);
   }
-
   Mesh_properties* get_remesh() { return remesh_; }
-
   const Mesh_properties* get_remesh() const { return remesh_; }
+  void delete_input() {
+    if (input_ != NULL) {
+      delete input_;
+    }
+    input_ = NULL;
+  }
+  void delete_remesh() {
+    if (remesh_ != NULL) {
+      delete remesh_;
+    }
+    remesh_ = NULL;
+  }
+  void save_remesh_as(const std::string &file_name) const {
+    size_t pos = file_name.find_last_of('.');
+    if (pos == std::string::npos) {
+      std::cout << "Invalid file name" << std::endl;
+      return;
+    }
+    std::string extension = file_name.substr(pos);
+    std::transform(extension.begin(), extension.end(),
+      extension.begin(), std::tolower);
+    if (extension == ".off") {
+      save_as_off(file_name);
+    }
+    else {
+      std::cout << "Invalid file type" << std::endl;
+    }
+  }
 
+  // 4) mesh properties
   void input_properties() const {
     std::cout << std::endl;
     std::cout << yellow << "INPUT PROPERTIES" << white << std::endl;
     input_->trace_properties();
   }
-
   bool remesh_properties() {
     bool status_before = links_initialized_, status_after = links_initialized_;
     if (remesh_ != NULL) {
@@ -323,8 +342,18 @@ public:
     return status_before != status_after;
   }
 
+  // 5) max error
+  FT get_max_error_threshold_value() const {
+    FT diagonal = std::sqrt(std::pow(
+      input_bbox.xmax() - input_bbox.xmin(), 2) +
+      std::pow(input_bbox.ymax() - input_bbox.ymin(), 2) +
+      std::pow(input_bbox.zmax() - input_bbox.zmin(), 2));
+    return diagonal * np_.max_error_threshold * 0.01;
+  }
+
+  // 6) feature intentisities
   void calculate_feature_intensities(bool update_input, bool update_remesh,
-                                     bool verbose_progress) {
+    bool verbose_progress) {
     if (update_input && input_ != NULL) {
       if (verbose_progress) {
         std::cout << "Computing input feature intensities...";
@@ -346,20 +375,7 @@ public:
     links_initialized_ = false;
   }
 
-  void delete_input() {
-    if (input_ != NULL) {
-      delete input_;
-    }
-    input_ = NULL;
-  }
-
-  void delete_remesh() {
-    if (remesh_ != NULL) {
-      delete remesh_;
-    }
-    remesh_ = NULL;
-  }
-
+  // 7) sample and links
   void generate_samples_and_links() {
     if (input_ == NULL || remesh_ == NULL || links_initialized_) {
       return;
@@ -381,15 +397,17 @@ public:
       value /= remesh_->get_mesh().number_of_faces();
       samples_per_face = static_cast<int>(value);
     }
-    remesh_->generate_out_links(input_face_tree_, samples_per_face, 5, NULL, np_);
+    remesh_->generate_out_links(input_face_tree_, samples_per_face,
+      INITIAL_BVD_COUNT, NULL, np_);
     // step 4: generate the in links
-    input_->generate_out_links(remesh_face_tree_, np_.samples_per_face_in, 5, remesh_, np_);
+    input_->generate_out_links(remesh_face_tree_, np_.samples_per_face_in,
+      INITIAL_BVD_COUNT, remesh_, np_);
     // step 5: compute the max_squared_errors
     remesh_->calculate_max_squared_errors();
     links_initialized_ = true;
   }
 
-  // polyhedron manipulations
+  // 8) polyhedron manipulations
   int eliminate_input_degenerated_faces() const {
     return input_->eliminate_degenerated_faces();
   }
@@ -398,7 +416,6 @@ public:
     return input_->split_long_edges();
   }
 
-  // minangle remeshing
   void minangle_remeshing() {
     if (!links_initialized_) {
       generate_samples_and_links();
@@ -432,12 +449,12 @@ public:
     CGAL::Timer timer;
     timer.start();
     std::cout << std::endl << "Initial mesh simplification..." << std::endl;
-    std::cout << "(max error threshold value = " 
-              << max_error_threshold_value << ")" << std::endl;
+    std::cout << "(max error threshold value = "
+      << max_error_threshold_value << ")" << std::endl;
     DPQueue_halfedge_long large_error_queue;
     DPQueue_halfedge_short collapse_candidate_queue;
     remesh_->fill_collapse_candidate_edges(max_error_threshold_value,
-        &large_error_queue, &collapse_candidate_queue, np_);
+      &large_error_queue, &collapse_candidate_queue, np_);
     unsigned int index = 0, nb_operations = 0;
     halfedge_descriptor max_error_halfedge;
     FT max_error = 0.0;
@@ -446,7 +463,7 @@ public:
       while (remesh_->size_of_vertices() < np_.max_mesh_complexity &&
         !large_error_queue.empty()) {
         DPQueue_halfedge_long::right_map::iterator eit =
-            large_error_queue.right.begin();
+          large_error_queue.right.begin();
         max_error = CGAL::sqrt(eit->first);
         max_error_halfedge = eit->second;
         large_error_queue.right.erase(eit);
@@ -455,8 +472,8 @@ public:
             << large_error_queue.size() << " ";
         }
         greedy_reduce_error(max_error_threshold_value, max_error,
-            np_.verbose_progress, true, &large_error_queue,
-            &collapse_candidate_queue, max_error_halfedge);
+          np_.verbose_progress, true, &large_error_queue,
+          &collapse_candidate_queue, max_error_halfedge);
       }
       if (!collapse_candidate_queue.empty()) {
         if (np_.verbose_progress) {
@@ -465,14 +482,14 @@ public:
         }
         // step 1: get the top halfedge that might be collapsed
         DPQueue_halfedge_short::right_map::iterator eit =
-            collapse_candidate_queue.right.begin();
+          collapse_candidate_queue.right.begin();
         halfedge_descriptor hd = eit->second;
         collapse_candidate_queue.right.erase(eit);
         collapse_candidate_queue.left.erase(remesh_->get_opposite(hd));
         // step 2: try to collapse with the constraints of max_error
         vertex_descriptor vd = collapse_applied(max_error_threshold_value,
-            -1.0, true, NULL, &large_error_queue, 
-            &collapse_candidate_queue, hd);
+          -1.0, true, NULL, &large_error_queue,
+          &collapse_candidate_queue, hd);
         // step 3: update the adjacent halfedges
         if (vd != remesh_->get_null_vertex()) {
           ++nb_operations;
@@ -500,14 +517,14 @@ public:
     min_radian_halfedge = remesh_->calculate_minimal_radian(&min_radian);
     std::cout << std::endl << "Split local longest edge..." << std::endl;
     std::cout << "(max error threshold value = " << max_error_threshold_value
-              << ", min angle threshold = " << np_.min_angle_threshold
-              << "бу)" << std::endl;
+      << ", min angle threshold = " << np_.min_angle_threshold
+      << "бу)" << std::endl;
     face_descriptor fd = remesh_->get_face(min_radian_halfedge);
     halfedge_descriptor longest_hd = remesh_->get_longest_halfedge(fd);
     longest_hd = remesh_->longest_side_propagation(longest_hd);
     vertex_descriptor vd = remesh_->split_edge(input_face_tree_,
-        max_error_threshold_value, max_error, min_radian,
-        false, NULL, NULL, longest_hd, np_);
+      max_error_threshold_value, max_error, min_radian,
+      false, NULL, NULL, longest_hd, np_);
     if (vd != remesh_->get_null_vertex()) {
       std::cout << "1 local longest edge splitted" << std::endl;
     }
@@ -531,19 +548,19 @@ public:
         std::cout << "(max error threshold = " << max_error_threshold_value
           << ", max error = " << max_error << ")" << std::endl;
         greedy_reduce_error(max_error_threshold_value, max_error, true, false,
-                            NULL, NULL, max_error_halfedge);
+          NULL, NULL, max_error_halfedge);
         return;
       }
     }
     // step 2: try to increase the min radian
     FT min_radian = CGAL_PI;
     halfedge_descriptor min_radian_halfedge;
-    min_radian_halfedge = remesh_->get_minimal_radian(&min_radian);
+    min_radian_halfedge = remesh_->calculate_minimal_radian(&min_radian);
     std::cout << "(min angle threshold = " << np_.min_angle_threshold
       << "бу, min angle = " << remesh_->to_angle(min_radian)
       << "бу)" << std::endl;
     greedy_improve_angle(max_error_threshold_value, min_radian, true, NULL,
-                         NULL, min_radian_halfedge);
+      NULL, min_radian_halfedge);
   }
 
   void maximize_minimal_angle() {
@@ -566,9 +583,9 @@ public:
     DPQueue_halfedge_long large_error_queue;
     DPQueue_halfedge_short small_radian_queue;
     remesh_->fill_small_radian_edges(max_error_threshold_value,
-        &large_error_queue, &small_radian_queue, np_);
+      &large_error_queue, &small_radian_queue, np_);
     while (remesh_->size_of_vertices() < np_.max_mesh_complexity &&
-        (!large_error_queue.empty() || !small_radian_queue.empty())) {
+      (!large_error_queue.empty() || !small_radian_queue.empty())) {
       while (remesh_->size_of_vertices() < np_.max_mesh_complexity &&
         !large_error_queue.empty()) {
         DPQueue_halfedge_long::right_map::iterator eit =
@@ -581,11 +598,11 @@ public:
             << max_error << " ";
         }
         greedy_reduce_error(max_error_threshold_value, max_error,
-            np_.verbose_progress, false, &large_error_queue,
-            &small_radian_queue, max_error_halfedge);
+          np_.verbose_progress, false, &large_error_queue,
+          &small_radian_queue, max_error_halfedge);
       }
       if (remesh_->size_of_vertices() < np_.max_mesh_complexity &&
-          !small_radian_queue.empty()) {
+        !small_radian_queue.empty()) {
         DPQueue_halfedge_short::right_map::iterator eit =
           small_radian_queue.right.begin();
         min_radian = eit->first;
@@ -593,11 +610,11 @@ public:
         small_radian_queue.right.erase(eit);
         if (np_.verbose_progress) {
           std::cout << ++nb_operations << ": min angle = "
-                    << remesh_->to_angle(min_radian) << " ";
+            << remesh_->to_angle(min_radian) << " ";
         }
         greedy_improve_angle(max_error_threshold_value, min_radian,
-            np_.verbose_progress, &large_error_queue, &small_radian_queue,
-            min_radian_halfedge);
+          np_.verbose_progress, &large_error_queue, &small_radian_queue,
+          min_radian_halfedge);
       }
     }
     // Version 2: do not use dynamic priority queue
@@ -660,8 +677,8 @@ public:
     timer.start();
     std::cout << std::endl << "Final vertex relocation..." << std::endl;
     std::cout << "(max error threshold value = " << max_error_threshold_value
-              << ", min angle threshold = " << np_.min_angle_threshold
-              << "бу)..." << std::endl;
+      << ", min angle threshold = " << np_.min_angle_threshold
+      << "бу)..." << std::endl;
     DPQueue_vertex_short relocate_candidate_queue;
     remesh_->fill_relocate_candidate_vertices(&relocate_candidate_queue);
     unsigned int index = 0, nb_relocate = 0;
@@ -672,19 +689,19 @@ public:
       }
       // step 1: get the top vertex that might be relocated
       DPQueue_vertex_short::right_map::iterator eit =
-          relocate_candidate_queue.right.begin();
+        relocate_candidate_queue.right.begin();
       FT min_radian = eit->first;
       vertex_descriptor vd = eit->second;
       relocate_candidate_queue.right.erase(eit);
       // step 2: try to relocate with the constrait of max_error and min_radian
       Point initial_point = remesh_->calculate_initial_point_for_relocate(
-          input_face_tree_, vd, np_);
+        input_face_tree_, vd, np_);
       bool relocated = remesh_->relocate_vertex(input_face_tree_,
-          max_error_threshold_value, -1.0, min_radian, false, NULL, NULL,
-          initial_point, vd, np_);
+        max_error_threshold_value, -1.0, min_radian, false, NULL, NULL,
+        initial_point, vd, np_);
       if (relocated) {
         remesh_->update_relocate_candidate_vertices(
-            vd, &relocate_candidate_queue);
+          vd, &relocate_candidate_queue);
         ++nb_relocate;
         if (np_.verbose_progress) {
           std::cout << "1 vertices relocated";
@@ -695,28 +712,11 @@ public:
       }
     }
     std::cout << "Done (" << nb_relocate << " vertices relocated, "
-              << timer.time() << " s)" << std::endl;
+      << timer.time() << " s)" << std::endl;
   }
 
-  // IO
-  void save_remesh_as(const std::string &file_name) const {
-    size_t pos = file_name.find_last_of('.');
-    if (pos == std::string::npos) {
-      std::cout << "Invalid file name" << std::endl;
-      return;
-    }
-    std::string extension = file_name.substr(pos);
-    std::transform(extension.begin(), extension.end(), 
-                   extension.begin(), std::tolower);
-    if (extension == ".off") {
-      save_as_off(file_name);
-    }
-    else {
-      std::cout << "Invalid file type" << std::endl;
-    }
-  }
-
-  // normals
+private:
+  // 1) normals
   void calculate_normals(bool is_input, bool verbose_progress) const {
     const std::string name = is_input ? "input" : "remesh";
     if (verbose_progress) {
@@ -733,7 +733,7 @@ public:
     }
   }
 
-  // trees
+  // 2) trees
   void build_face_tree(bool is_input, Face_tree *face_tree) const {
     CGAL::Timer timer;
     timer.start();
@@ -748,28 +748,7 @@ public:
     std::cout << "done (" << timer.time() << " s)" << std::endl;
   }
 
-  void clear_links() {
-    // step 1: clear the out links
-    remesh_->clear_out_links();
-    // step 2: clear the in links (out links from the perspective of m_pInput)
-    remesh_->clear_in_link_iterators();
-    input_->clear_out_links();
-    // step 3: clear private data
-    collapsed_list_.clear();
-    collapsed_map_.clear();
-  }
-
-  // max error
-  FT get_max_error_threshold_value() const {
-    FT diagonal = std::sqrt(std::pow(
-      input_bbox.xmax() - input_bbox.xmin(), 2) +
-      std::pow(input_bbox.ymax() - input_bbox.ymin(), 2) +
-      std::pow(input_bbox.zmax() - input_bbox.zmin(), 2));
-    return diagonal * np_.max_error_threshold * 0.01;
-  }
-
-private:
-  // IO
+  // 3) IO
   void save_as_off(const std::string &file_name) const {
     if (remesh_ == NULL) {
       std::cout << "Please set the remesh first" << std::endl;
@@ -787,8 +766,20 @@ private:
     }
     ofs.close();
   }
+
+  // 4) sample and links
+  void clear_links() {
+    // step 1: clear the out links
+    remesh_->clear_out_links();
+    // step 2: clear the in links (out links from the perspective of m_pInput)
+    remesh_->clear_in_link_iterators();
+    input_->clear_out_links();
+    // step 3: clear private data
+    collapsed_list_.clear();
+    collapsed_map_.clear();
+  }
   
-  // min angle remeshing
+  // 5) manipulations
   void greedy_improve_angle(FT max_error_threshold_value, FT min_radian,
       bool verbose_progress, DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_radian_queue,
@@ -898,102 +889,8 @@ private:
     }
   }
 
-  // collapse
-  vertex_descriptor collapse_applied(FT max_error_threshold_value,
-      FT min_radian, bool reduce_complexity, bool *infinite_loop, 
-      DPQueue_halfedge_long *large_error_queue,
-      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd) {
-    /* if min_radian > 0, we improve min_radian;
-    if infinite_loop is not NULL, we check the infinite loop case;
-    if improve_min_radian, we improve the min radian; otherwise,
-    we collapse to reduce the mesh complexity */
-    // step 1: topology constraints check
-    if (!remesh_->is_collapsable(hd)) {
-      return remesh_->get_null_vertex();
-    }
-    // step 2: geometry constraints check
-    Halfedge_list halfedges;  // use the halfedges to represent faces
-    bool is_ring = remesh_->predict_faces_after_collapse(hd, &halfedges);
-    Point new_point = remesh_->calculate_initial_point_for_collapse(hd, np_);
-    if (np_.keep_vertex_in_one_ring &&
-        remesh_->collapse_would_cause_wrinkle(halfedges, new_point, hd)) {
-      return remesh_->get_null_vertex();
-    }
-    // step 3: backup the original local links
-    std::set<face_descriptor> one_ring_faces, extended_faces;
-    remesh_->collect_one_ring_faces_incident_to_edge(hd, &one_ring_faces);
-    remesh_->extend_faces(one_ring_faces, np_.stencil_ring_size, 
-                          &extended_faces);
-    Link_iter_list face_in_links, edge_in_links;
-    Link_pointer_list vertex_in_links;
-    Point_list face_in_end_points, edge_in_end_points, vertex_in_end_points;
-    remesh_->backup_local_in_links(extended_faces, &face_in_links, 
-        &face_in_end_points, &edge_in_links, &edge_in_end_points,
-        &vertex_in_links, &vertex_in_end_points);
-    // step 4: simulate the edge collapse
-    FT error = DOUBLE_MAX, radian = 0.0;
-    simulate_edge_collapse(one_ring_faces, extended_faces, &halfedges, hd,
-        is_ring, &face_in_links, &edge_in_links, &vertex_in_links, &error, 
-        &radian, &new_point);
-    remesh_->restore_local_in_links(face_in_end_points, &face_in_links,
-        edge_in_end_points, &edge_in_links, vertex_in_end_points, 
-        &vertex_in_links);
-    // step 5: fidelity constraints check (max_error)
-    if (error >= max_error_threshold_value) {
-      return remesh_->get_null_vertex();
-    }
-    // step 6: quality constraints check (min_radian) if necessary
-    if (min_radian > 0 && radian < min_radian) {
-      return remesh_->get_null_vertex();
-    }
-    // step 7: infinite loops case check if necessary
-    if (infinite_loop != NULL) {
-      *infinite_loop = caused_infinite_loop(hd);
-      if (*infinite_loop) {
-        return remesh_->get_null_vertex();
-      }
-    }
-    // step 8: collapse the edge authentically
-    vertex_descriptor vh = remesh_->collapse_edge(input_face_tree_,
-      max_error_threshold_value, min_radian, reduce_complexity,
-      large_error_queue, small_value_queue, &face_in_links, &edge_in_links,
-      &vertex_in_links, hd, new_point, np_);
-    return vh;
-  }
-
-  void simulate_edge_collapse(const std::set<face_descriptor> &one_ring_faces,
-      const std::set<face_descriptor> &extended_faces, 
-      Halfedge_list *halfedges, halfedge_descriptor hh, bool is_ring,
-      Link_iter_list *face_in_links, Link_iter_list *edge_in_links,
-      Link_pointer_list *vertex_in_links, FT *error, FT *radian,
-      Point *new_point) const {
-    // step 1: construct the local_mesh
-    Mesh local_mesh;
-    vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
-        extended_faces, halfedges, *new_point, is_ring, &local_mesh);
-    Mesh_properties local_mp(local_mesh);
-    local_mp.calculate_feature_intensities(np_);
-    // step 2: get the in_link_faces (for function compatability)
-    std::set<face_descriptor> in_link_faces;
-    local_mp.collect_all_faces(&in_link_faces);
-    local_mp.generate_local_links(input_face_tree_, true, face_in_links,
-        edge_in_links, vertex_in_links, local_vd, &in_link_faces, np_);
-    // step 3: optimize the vertex position if necessary
-    if (np_.optimize_after_local_operations) {
-      local_mp.optimize_vertex_position(input_face_tree_, face_in_links,
-          edge_in_links, vertex_in_links, local_vd, &in_link_faces, np_);
-    }
-    // step 4: update the max_errors for faces
-    local_mp.calculate_max_squared_errors(&in_link_faces);
-    // step 5: calculate the error, radian and new_point
-    local_mp.calculate_local_maximal_error(in_link_faces, error);
-    *radian = local_mp.calculate_minimal_radian_around_vertex(local_vd);
-    *new_point = local_mesh.point(local_vd);
-  }
-
   bool caused_infinite_loop(halfedge_descriptor hd) {
     std::map<Point, std::map<FT, Visit_iter>, Point_Comp>::iterator it1;
-    //std::map<Point, std::map<FT, Visit_iter>>::iterator it1;
     Visit_iter it2;
     Point point = remesh_->get_point(remesh_->get_opposite_vertex(hd));
     FT sl = remesh_->squared_length(hd);
@@ -1036,7 +933,100 @@ private:
     }
   }
 
-  // utilities
+  // 6) collapse
+  vertex_descriptor collapse_applied(FT max_error_threshold_value,
+      FT min_radian, bool reduce_complexity, bool *infinite_loop, 
+      DPQueue_halfedge_long *large_error_queue,
+      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd) {
+    /* if min_radian > 0, we improve min_radian;
+    if infinite_loop is not NULL, we check the infinite loop case;
+    if improve_min_radian, we improve the min radian; otherwise,
+    we collapse to reduce the mesh complexity */
+    // step 1: topology constraints check
+    if (!remesh_->is_collapsable(hd)) {
+      return remesh_->get_null_vertex();
+    }
+    // step 2: geometry constraints check
+    Halfedge_list halfedges;  // use the halfedges to represent faces
+    bool is_ring = remesh_->predict_faces_after_collapse(hd, &halfedges);
+    Point new_point = remesh_->calculate_initial_point_for_collapse(hd, np_);
+    if (np_.keep_vertex_in_one_ring &&
+        remesh_->collapse_would_cause_wrinkle(halfedges, new_point, hd)) {
+      return remesh_->get_null_vertex();
+    }
+    // step 3: backup the original local links
+    std::set<face_descriptor> one_ring_faces, extended_faces;
+    remesh_->collect_one_ring_faces_incident_to_edge(hd, &one_ring_faces);
+    remesh_->extend_faces(one_ring_faces, np_.stencil_ring_size, 
+                          &extended_faces);
+    Link_iter_list face_in_links, edge_in_links;
+    Link_pointer_list vertex_in_links;
+    Point_list face_in_end_points, edge_in_end_points, vertex_in_end_points;
+    remesh_->backup_local_in_links(extended_faces, &face_in_links, 
+        &face_in_end_points, &edge_in_links, &edge_in_end_points,
+        &vertex_in_links, &vertex_in_end_points);
+    // step 4: simulate the edge collapse
+    FT error = DOUBLE_MAX, radian = 0.0;
+    simulate_edge_collapse(one_ring_faces, extended_faces, halfedges, hd,
+        is_ring, face_in_links, edge_in_links, vertex_in_links, &error, 
+        &radian, &new_point);
+    remesh_->restore_local_in_links(face_in_end_points, face_in_links,
+        edge_in_end_points, edge_in_links, vertex_in_end_points,
+        vertex_in_links);
+    // step 5: fidelity constraints check (max_error)
+    if (error >= max_error_threshold_value) {
+      return remesh_->get_null_vertex();
+    }
+    // step 6: quality constraints check (min_radian) if necessary
+    if (min_radian > 0 && radian < min_radian) {
+      return remesh_->get_null_vertex();
+    }
+    // step 7: infinite loops case check if necessary
+    if (infinite_loop != NULL) {
+      *infinite_loop = caused_infinite_loop(hd);
+      if (*infinite_loop) {
+        return remesh_->get_null_vertex();
+      }
+    }
+    // step 8: collapse the edge authentically
+    vertex_descriptor vh = remesh_->collapse_edge(input_face_tree_,
+      max_error_threshold_value, min_radian, reduce_complexity,
+      large_error_queue, small_value_queue, face_in_links, edge_in_links,
+      vertex_in_links, hd, new_point, np_);
+    return vh;
+  }
+
+  void simulate_edge_collapse(const std::set<face_descriptor> &one_ring_faces,
+      const std::set<face_descriptor> &extended_faces, 
+      const Halfedge_list &halfedges, halfedge_descriptor hh, bool is_ring,
+      const Link_iter_list &face_in_links, const Link_iter_list &edge_in_links,
+      const Link_pointer_list &vertex_in_links, FT *error, FT *radian,
+      Point *new_point) const {
+    // step 1: construct the local_mesh
+    Mesh local_mesh;
+    vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
+        extended_faces, halfedges, *new_point, is_ring, &local_mesh);
+    Mesh_properties local_mp(local_mesh);
+    local_mp.calculate_feature_intensities(np_);
+    // step 2: get the in_link_faces (for function compatability)
+    std::set<face_descriptor> in_link_faces;
+    local_mp.collect_all_faces(&in_link_faces);
+    local_mp.generate_local_links(input_face_tree_, true, face_in_links,
+        edge_in_links, vertex_in_links, local_vd, in_link_faces, np_);
+    // step 3: optimize the vertex position if necessary
+    if (np_.optimize_after_local_operations) {
+      local_mp.optimize_vertex_position(input_face_tree_, face_in_links,
+          edge_in_links, vertex_in_links, local_vd, in_link_faces, np_);
+    }
+    // step 4: update the max_errors for faces
+    local_mp.calculate_max_squared_errors(&in_link_faces);
+    // step 5: calculate the error, radian and new_point
+    local_mp.calculate_local_maximal_error(in_link_faces, error);
+    *radian = local_mp.calculate_minimal_radian_around_vertex(local_vd);
+    *new_point = local_mesh.point(local_vd);
+  }
+
+  // 7) utilities
   inline FT to_approximation(FT value) const {
     FT precison = MAX_VALUE;
     int temp_value = value * precison;
@@ -1059,6 +1049,9 @@ private:
   // 4) status data
   bool links_initialized_;
   bool input_aabb_tree_constructed_;
+
+  // 5) const data
+  int const INITIAL_BVD_COUNT = 5;
 };
 
 }

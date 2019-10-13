@@ -229,7 +229,7 @@ public:
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_list>>::type Face_link_list;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_iter_list>>::type Face_link_iter_list;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_face_property_t<Link_pointer_list>>::type Face_link_pointer_list;
-  typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<int>>::type Halfedge_tags; // halfedges
+  typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<int>>::type Halfedge_tags;         // edges
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<FT>>::type Halfedge_normal_dihedrals;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<bool>>::type Halfedge_are_creases;
   typedef typename boost::property_map<Mesh, CGAL::dynamic_halfedge_property_t<Link_list>>::type Halfedge_link_list;
@@ -243,24 +243,17 @@ public:
   typedef typename AABB_tree<Face_traits> Face_tree;
   typedef typename Face_tree::Point_and_primitive_id Point_and_primitive_id;
   // Dynamic priority queues
-  typedef boost::bimap<
-    boost::bimaps::set_of<halfedge_descriptor>,
-    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_halfedge_long;
+  typedef boost::bimap<boost::bimaps::set_of<halfedge_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_halfedge_long;
   typedef typename DPQueue_halfedge_long::value_type    Halfedge_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<halfedge_descriptor>,
-    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_halfedge_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<halfedge_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_halfedge_short;
   typedef typename DPQueue_halfedge_short::value_type   Halfedge_short;
-  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>,
-    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_vertex_long;
+  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_vertex_long;
   typedef typename DPQueue_vertex_long::value_type      Vertex_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>,
-    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_vertex_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<vertex_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_vertex_short;
   typedef typename DPQueue_vertex_short::value_type     Vertex_short;
-  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>,
-    boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_face_long;
+  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>, boost::bimaps::multiset_of<FT, std::greater<FT>>> DPQueue_face_long;
   typedef typename DPQueue_face_long::value_type        Face_long;
-  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>,
-    boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_face_short;
+  typedef typename boost::bimap<boost::bimaps::set_of<face_descriptor>, boost::bimaps::multiset_of<FT, std::less<FT>>>    DPQueue_face_short;
   typedef typename DPQueue_face_short::value_type       Face_short;
 
   // Struct definitions
@@ -288,7 +281,7 @@ public:
     face_in_links_ = get(CGAL::dynamic_face_property_t<Link_iter_list>(), mesh_);
     edge_in_links_ = get(CGAL::dynamic_face_property_t<Link_iter_list>(), mesh_);
     vertex_in_links_ = get(CGAL::dynamic_face_property_t<Link_pointer_list>(), mesh_);
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       reset_face_properties(*fi, get_null_face());
     }
@@ -297,7 +290,7 @@ public:
     halfedge_normal_dihedrals_ = get(CGAL::dynamic_halfedge_property_t<FT>(), mesh_);
     halfedge_are_creases_ = get(CGAL::dynamic_halfedge_property_t<bool>(), mesh_);
     halfedge_out_links_ = get(CGAL::dynamic_halfedge_property_t<Link_list>(), mesh_);
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       reset_halfedge_properties(*hi, get_null_halfedge());
     }
@@ -306,7 +299,7 @@ public:
     vertex_max_dihedrals_ = get(CGAL::dynamic_vertex_property_t<FT>(), mesh_);
     vertex_gaussian_curvatures_ = get(CGAL::dynamic_vertex_property_t<FT>(), mesh_);
     vertex_out_link_ = get(CGAL::dynamic_vertex_property_t<Link>(), mesh_);
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
         vi != mesh_.vertices().end(); ++vi) {
       reset_vertex_properties(*vi, get_null_vertex());
     }
@@ -314,7 +307,15 @@ public:
 
   virtual ~Mesh_properties() {}
 
-  // element access
+
+
+  // temp
+  size_t size_of_vertices() const { return mesh_.number_of_vertices(); }
+  
+
+
+
+  // elements access
   const Mesh& get_mesh() const { return mesh_; }
 
   Point& get_point(vertex_descriptor vd) { return mesh_.point(vd); }
@@ -326,21 +327,17 @@ public:
 
   face_descriptor get_face(halfedge_descriptor hd) const { return mesh_.face(hd); }
 
-  inline face_descriptor get_null_face() const { return mesh_.null_face(); }
-
-  bool is_border(halfedge_descriptor hd) const { return mesh_.is_border(hd); }
-
-  size_t size_of_vertices() { return mesh_.number_of_vertices(); }
-
-  /*void get_all_faces(Face_list *faces) {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+  void get_all_faces(Face_list *faces) const {
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       faces->push_back(*fi);
     }
-  }*/
+  }
 
-  void get_all_halfedges(Halfedge_list *halfedges) {
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+  inline face_descriptor get_null_face() const { return mesh_.null_face(); }
+
+  void get_all_halfedges(Halfedge_list *halfedges) const {
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       halfedges->push_back(*hi);
     }
@@ -348,8 +345,8 @@ public:
 
   inline halfedge_descriptor get_null_halfedge() const { return mesh_.null_halfedge(); }
 
-  void get_all_edges(Edge_list *edges) {
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin(); 
+  void get_all_edges(Edge_list *edges) const {
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin(); 
         ei != mesh_.edges().end(); ++ei) {
       edges->push_back(*ei);
     }
@@ -357,150 +354,71 @@ public:
 
   inline edge_descriptor get_null_edge() const { return mesh_.null_edge(); }
 
-  void get_all_vertices(Vertex_list *vertices) {
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+  void get_all_vertices(Vertex_list *vertices) const {
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
         vi != mesh_.vertices().end(); ++vi) {
       vertices->push_back(*vi);
     }
   }
+
   inline vertex_descriptor get_null_vertex() const { return mesh_.null_vertex(); }
 
-  void reset_face_properties(face_descriptor fd, face_descriptor fd_source) {
-    // step 1: reset the basic properties
-    if (fd_source == get_null_face()) {
-      set_face_tag(fd, 0);
-      set_face_normal(fd, CGAL::NULL_VECTOR);
-      set_face_max_squared_error(fd, 0.0);
-    }
-    else {
-      set_face_tag(fd, get_face_tag(fd_source));
-      set_face_normal(fd, get_face_normal(fd_source));
-      set_face_max_squared_error(fd, get_face_max_squared_error(fd_source));
-    }
-    // step 2: reset the sample links
-    clear_face_links(fd);
-  }
-
-  void clear_face_links(face_descriptor fd) {
-    set_face_out_links(fd, Link_list());
-    set_face_in_links(fd, Link_iter_list());
-    set_edge_in_links(fd, Link_iter_list());
-    set_vertex_in_links(fd, Link_pointer_list());
-  }
-
-  void reset_halfedge_properties(halfedge_descriptor hd, 
-                                 halfedge_descriptor hd_source) {
-    // step 1: reset the basic properties
-    if (hd_source == get_null_halfedge()) {
-      set_halfedge_tag(hd, 0);
-      set_halfedge_normal_dihedral(hd, -1.0);
-      set_halfedge_is_crease(hd, false);
-    }
-    else {
-      set_halfedge_tag(hd, get_halfedge_tag(hd_source));
-      set_halfedge_normal_dihedral(hd, get_halfedge_normal_dihedral(hd_source));
-      set_halfedge_is_crease(hd, get_halfedge_is_crease(hd_source));
-    }
-    // step 2: reset the sample links
-    clear_halfedge_links(hd);
-  }
-
-  void clear_halfedge_links(halfedge_descriptor hd) {
-    set_halfege_out_links(hd, Link_list());
-  }
-
-  void reset_vertex_properties(vertex_descriptor vd,
-                               vertex_descriptor vd_source) {
-    // step 1: reset the basic properties
-    if (vd_source == get_null_vertex()) {
-      set_vertex_tag(vd, 0);
-      set_vertex_max_dihedral(vd, -1.0);
-      set_vertex_gaussian_curvature(vd, 0.0);
-    }
-    else {
-      set_vertex_tag(vd, get_vertex_tag(vd_source));
-      set_vertex_max_dihedral(vd, get_vertex_max_dihedral(vd_source));
-      set_vertex_gaussian_curvature(vd, get_vertex_gaussian_curvature(vd_source));
-    }
-    // step 2: reset the sample links 
-    clear_vertex_links(vd);
-  }
-
-  void clear_vertex_links(vertex_descriptor vd) {
-    set_vertex_out_link(vd, Link());
-  }
-
-  //Face_tags& get_all_face_tags() { return face_tags_; }
   int& get_face_tag(face_descriptor fd) { return get(face_tags_, fd); }
   const int& get_face_tag(face_descriptor fd) const { return get(face_tags_, fd); }
   void set_face_tag(face_descriptor fd, int value) { put(face_tags_, fd, value); }
 
-  //Face_normals& get_all_face_normals() { return face_normals_; }
   Normal& get_face_normal(face_descriptor fd) { return get(face_normals_, fd); }
   const Normal& get_face_normal(face_descriptor fd) const { return get(face_normals_, fd); }
   void set_face_normal(face_descriptor fd, Vector value) { put(face_normals_, fd, value); }
 
-  //Face_max_errors& get_all_face_max_errors() { return face_max_errors_; }
   FT& get_face_max_squared_error(face_descriptor fd) { return get(face_max_squared_errors_, fd); }
   const FT& get_face_max_squared_error(face_descriptor fd) const { return get(face_max_squared_errors_, fd); }
   void set_face_max_squared_error(face_descriptor fd, FT value) { put(face_max_squared_errors_, fd, value); }
 
-  //Face_link_list& get_all_face_out_links() { return face_out_links_; }
   Link_list& get_face_out_links(face_descriptor fd) { return get(face_out_links_, fd); }
   const Link_list& get_face_out_links(face_descriptor fd) const { return get(face_out_links_, fd); }
   void set_face_out_links(face_descriptor fd, const Link_list &value) { put(face_out_links_, fd, value); }
 
-  //Face_link_iter_list& get_all_face_in_links() { return face_in_links_; }
   Link_iter_list& get_face_in_links(face_descriptor fd) { return get(face_in_links_, fd); }
   const Link_iter_list& get_face_in_links(face_descriptor fd) const { return get(face_in_links_, fd); }
   void set_face_in_links(face_descriptor fd, const Link_iter_list &value) { put(face_in_links_, fd, value); }
 
-  //Face_link_iter_list& get_all_edge_in_links() { return edge_in_links_; }
   Link_iter_list& get_edge_in_links(face_descriptor fd) { return get(edge_in_links_, fd); }
   const Link_iter_list& get_edge_in_links(face_descriptor fd) const { return get(edge_in_links_, fd); }
   void set_edge_in_links(face_descriptor fd, const Link_iter_list &value) { put(edge_in_links_, fd, value); }
 
-  //Face_link_pointer_list& get_all_vertex_in_links() { return vertex_in_links_; }
   Link_pointer_list& get_vertex_in_links(face_descriptor fd) { return get(vertex_in_links_, fd); }
   const Link_pointer_list& get_vertex_in_links(face_descriptor fd) const { return get(vertex_in_links_, fd); }
   void set_vertex_in_links(face_descriptor fd, const Link_pointer_list &value) { put(vertex_in_links_, fd, value); }
 
-  //Halfedge_tags& get_all_halfedge_tags() { return halfedge_tags_; }
   int& get_halfedge_tag(halfedge_descriptor hd) { return get(halfedge_tags_, hd); }
   const int& get_halfedge_tag(halfedge_descriptor hd) const { return get(halfedge_tags_, hd); }
   void set_halfedge_tag(halfedge_descriptor hd, int value) { put(halfedge_tags_, hd, value); }
 
-  //Halfedge_normal_dihedrals& get_all_halfedge_normal_dihedral() { return halfedge_normal_dihedrals_; }
   FT& get_halfedge_normal_dihedral(halfedge_descriptor hd) { return get(halfedge_normal_dihedrals_, hd); }
   const FT& get_halfedge_normal_dihedral(halfedge_descriptor hd) const { return get(halfedge_normal_dihedrals_, hd); }
   void set_halfedge_normal_dihedral(halfedge_descriptor hd, FT value) { put(halfedge_normal_dihedrals_, hd, value); }
 
-  //Halfedge_are_creases& get_all_halfedge_are_creases() { return halfedge_are_creases_; }
   bool get_halfedge_is_crease(halfedge_descriptor hd) { return get(halfedge_are_creases_, hd); }
   const bool get_halfedge_is_crease(halfedge_descriptor hd) const { return get(halfedge_are_creases_, hd); }
   void set_halfedge_is_crease(halfedge_descriptor hd, bool value) { put(halfedge_are_creases_, hd, value); }
 
-  //Halfedge_link_list& get_all_halfedge_out_links() { return  halfedge_out_links_; }
   Link_list& get_halfedge_out_links(halfedge_descriptor hd) { return get(halfedge_out_links_, hd); }
   const Link_list& get_halfedge_out_links(halfedge_descriptor hd) const { return get(halfedge_out_links_, hd); }
   void set_halfege_out_links(halfedge_descriptor hd, const Link_list &value) { put(halfedge_out_links_, hd, value); }
 
-  //Vertex_tags& get_all_vertex_tags() { return vertex_tags_; }
   int& get_vertex_tag(vertex_descriptor vd) { return get(vertex_tags_, vd); }
   const int& get_vertex_tag(vertex_descriptor vd) const { return get(vertex_tags_, vd); }
   void set_vertex_tag(vertex_descriptor vd, int value) { put(vertex_tags_, vd, value); }
 
-  // Vertex_max_dihedral& get_all_vertex_max_dihedral() { return vertex_max_dihedrals_; }
   FT& get_vertex_max_dihedral(vertex_descriptor vd) { return get(vertex_max_dihedrals_, vd); }
   const FT& get_vertex_max_dihedral(vertex_descriptor vd) const { return get(vertex_max_dihedrals_, vd); }
   void set_vertex_max_dihedral(vertex_descriptor vd, FT value) { put(vertex_max_dihedrals_, vd, value); }
-  
-  //Vertex_gaussian_curvature& get_all_vertex_gaussian_curvatures() { return vertex_gaussian_curvatures_; }
+
   FT& get_vertex_gaussian_curvature(vertex_descriptor vd) { return get(vertex_gaussian_curvatures_, vd); }
   const FT& get_vertex_gaussian_curvature(vertex_descriptor vd) const { return get(vertex_gaussian_curvatures_, vd); }
   void set_vertex_gaussian_curvature(vertex_descriptor vd, FT value) { put(vertex_gaussian_curvatures_, vd, value); }
 
-  //Vertex_link& get_all_vertex_out_links() { return vertex_out_link_; }
   Link& get_vertex_out_link(vertex_descriptor vd) { return get(vertex_out_link_, vd); }
   const Link& get_vertex_out_link(vertex_descriptor vd) const { return get(vertex_out_link_, vd); }
   void set_vertex_out_link(vertex_descriptor vd, const Link &value) { put(vertex_out_link_, vd, value); }
@@ -515,8 +433,7 @@ public:
     int nb_eliminations = static_cast<int>(degenerated_faces.size());
     FT longest_squared_length = 0.0;
     while (!degenerated_faces.empty()) {
-      DPQueue_face_long::right_map::iterator eit = 
-          degenerated_faces.right.begin();
+      DPQueue_face_long::right_map::iterator eit = degenerated_faces.right.begin();
       face_descriptor fd = eit->second;
       degenerated_faces.right.erase(eit);
       halfedge_descriptor shortest_hd = get_shortest_halfedge(fd);
@@ -585,7 +502,7 @@ public:
 
   // normals
   void calculate_normals() {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       Normal normal = PMP::compute_face_normal(*fi, mesh_,
         PMP::parameters::vertex_point_map(mesh_.points()).geom_traits(Kernel()));
@@ -617,34 +534,34 @@ public:
       FT max_se = 0.0, se = 0.0;
       face_descriptor fd = *it;
       // face in links
-      Link_iter_list &face_in_links = get_face_in_links(fd);
-      for (Link_iter_list_iter it = face_in_links.begin(); 
+      const Link_iter_list &face_in_links = get_face_in_links(fd);
+      for (Link_iter_list_const_iter it = face_in_links.begin(); 
           it != face_in_links.end(); ++it) {
-        Link_list_iter llit = *it;
+        Link_list_const_iter llit = *it;
         const Link &link = *llit;
         se = CGAL::squared_distance(link.second.first, link.second.second);
         max_se = CGAL::max(max_se, se);
       }
       // edge in links
-      Link_iter_list &edge_in_links = get_edge_in_links(fd);
-      for (Link_iter_list_iter it = edge_in_links.begin(); 
+      const Link_iter_list &edge_in_links = get_edge_in_links(fd);
+      for (Link_iter_list_const_iter it = edge_in_links.begin(); 
           it != edge_in_links.end(); ++it) {
-        Link_list_iter llit = *it;
+        Link_list_const_iter llit = *it;
         const Link &link = *llit;
         se = CGAL::squared_distance(link.second.first, link.second.second);
         max_se = CGAL::max(max_se, se);
       }
       // vertex in links
-      Link_pointer_list &vertex_in_links = get_vertex_in_links(fd);
-      for (Link_pointer_iter it = vertex_in_links.begin(); 
+      const Link_pointer_list &vertex_in_links = get_vertex_in_links(fd);
+      for (Link_pointer_const_iter it = vertex_in_links.begin(); 
           it != vertex_in_links.end(); ++it) {
-        Link *link = *it;
+        const Link *link = *it;
         se = CGAL::squared_distance(link->second.first, link->second.second);
         max_se = CGAL::max(max_se, se);
       }
       // face out links
-      Link_list &face_out_links = get_face_out_links(fd);
-      for (Link_list_iter it = face_out_links.begin(); 
+      const Link_list &face_out_links = get_face_out_links(fd);
+      for (Link_list_const_iter it = face_out_links.begin(); 
           it != face_out_links.end(); ++it) {
         const Link &link = *it;
         se = CGAL::squared_distance(link.second.first, link.second.second);
@@ -657,8 +574,8 @@ public:
         if (get_halfedge_normal_dihedral(hi) == -1.0) {
           hi = get_opposite(hi);
         }
-        Link_list &edge_out_links = get_halfedge_out_links(hi);
-        for (Link_list_iter it = edge_out_links.begin(); 
+        const Link_list &edge_out_links = get_halfedge_out_links(hi);
+        for (Link_list_const_iter it = edge_out_links.begin(); 
             it != edge_out_links.end(); ++it) {
           const Link &link = *it;
           se = CGAL::squared_distance(link.second.first, link.second.second);
@@ -675,8 +592,8 @@ public:
     }
   }
 
-  halfedge_descriptor calculate_maximal_error(FT *max_error) {
-    Mesh::Face_range::iterator fi = mesh_.faces().begin();
+  halfedge_descriptor calculate_maximal_error(FT *max_error) const {
+    Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
     face_descriptor max_error_face = *fi;
     FT max_se = get_face_max_squared_error(max_error_face), se = 0.0;
     ++fi;
@@ -692,7 +609,7 @@ public:
   }
 
   halfedge_descriptor calculate_local_maximal_error(
-      const std::set<face_descriptor> &faces, FT *max_error) {
+      const std::set<face_descriptor> &faces, FT *max_error) const {
     assert(!faces.empty());
     std::set<face_descriptor>::const_iterator cit = faces.cbegin();
     face_descriptor max_error_fd = *cit;
@@ -740,13 +657,13 @@ public:
   // samples and links
   void clear_out_links() {
     // step 1: clear out links in faces
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       Link_list &face_out_links = get_face_out_links(*fi);
       face_out_links.clear();
     }
     // step 2: clear out links in halfedges
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
         ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -759,7 +676,7 @@ public:
   }
 
   void clear_in_link_iterators() {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin(); 
         fi != mesh_.faces().end(); ++fi) {
       Link_iter_list &face_in_links = get_face_in_links(*fi);
       face_in_links.clear();
@@ -771,7 +688,7 @@ public:
   }
 
   void clear_local_links(halfedge_descriptor hd, 
-      std::set<face_descriptor> *in_link_faces) {
+      const std::set<face_descriptor> &in_link_faces) {
     // step 1: clear all in link faces
     clear_local_in_links(in_link_faces);
     // step 2: clear the out links in faces that are incident to hd
@@ -794,7 +711,7 @@ public:
   }
 
   void clear_local_links(vertex_descriptor vd, 
-      std::set<face_descriptor> *in_link_faces) {
+      const std::set<face_descriptor> &in_link_faces) {
     // step 1: clear all in links in in_link_faces
     clear_local_in_links(in_link_faces);
     // step 2: clear the out links in one-ring faces of vd
@@ -902,7 +819,7 @@ public:
 
   void generate_random_samples(bool use_stratified_sampling, int nb_samples,
       int bvd_iteration_count_value, face_descriptor fd,
-      Point_list *inner_samples, std::list<double> *feature_weights) {
+      Point_list *inner_samples, std::list<double> *feature_weights) const {
     // step 1: generate the samples
     inner_samples->clear();
     feature_weights->clear();
@@ -995,7 +912,7 @@ public:
     // version 2: each sample has different feature weights (accurate)
     FT face_area = area(fd);
     FT weight_a, weight_b, weight_c;
-    for (Point_iter it = inner_samples->begin();
+    for (Point_const_iter it = inner_samples->begin();
         it != inner_samples->end(); ++it) {
       const Point &p = *it;
       weight_a = area(p, b, c) / face_area;
@@ -1040,6 +957,7 @@ public:
       Mesh_properties *mesh_properties, FT capacity, int nb_samples,
       halfedge_descriptor hd) {
     // precondition: the normal dihedral of hd is not -1.0
+    CGAL_precondition(get_halfedge_normal_dihedral(hd) != -1.0)
     vertex_descriptor vp = get_source_vertex(hd), vq = get_target_vertex(hd);
     const Point &p = get_point(vp), &q = get_point(vq);
     Vector vector = q - p;
@@ -1066,7 +984,7 @@ public:
 
   void generate_vertex_links(const Face_tree &face_tree,
     Mesh_properties *mesh_properties, bool use_stratified_sampling) {
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
       vi != mesh_.vertices().end(); ++vi) {
       generate_vertex_link(face_tree, mesh_properties,
         use_stratified_sampling, *vi);
@@ -1096,9 +1014,9 @@ public:
       Mesh_properties *mesh_properties, int bvd_iteration_count_value, 
       bool use_stratified_sampling, const Face_list &faces) {
     Point_list inner_samples;
-    Point_iter pit;
+    Point_const_iter pit;
     std::list<double> feature_weights;
-    std::list<double>::iterator fit;
+    std::list<double>::const_iterator fit;
     Point_and_primitive_id pp;
     for (auto it = faces.begin(); it != faces.end(); ++it) {
       face_descriptor fd = *it;
@@ -1130,7 +1048,7 @@ public:
       std::map<halfedge_descriptor, Link_list> *edge_out_map,
       Link *vertex_out, Link_iter_list *face_in_links,
       Link_iter_list *edge_in_links, Link_pointer_list *vertex_in_links,
-      vertex_descriptor vd) {
+      vertex_descriptor vd) const {
     // step 1: backup the out links
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
@@ -1158,31 +1076,31 @@ public:
   void backup_local_in_links(const std::set<face_descriptor> &extended_faces,
       Link_iter_list *face_in_links, Point_list *face_in_end_points,
       Link_iter_list *edge_in_links, Point_list *edge_in_end_points,
-      Link_pointer_list *vertex_in_links, Point_list *vertex_in_end_points) {
+      Link_pointer_list *vertex_in_links, Point_list *vertex_in_end_points) const {
     // step 1: backup the in link iterations
     backup_local_in_links(extended_faces, face_in_links, edge_in_links,
                           vertex_in_links);
     // step 2: store the in link end points (for simulation purpose)
-    for (Link_iter_list_iter it = face_in_links->begin();
+    for (Link_iter_list_const_iter it = face_in_links->begin();
         it != face_in_links->end(); ++it) {
-      Link_list_iter llit = *it;
+      Link_list_const_iter llit = *it;
       face_in_end_points->push_back(llit->second.second);
     }
-    for (Link_iter_list_iter it = edge_in_links->begin();
+    for (Link_iter_list_const_iter it = edge_in_links->begin();
         it != edge_in_links->end(); ++it) {
-      Link_list_iter llit = *it;
+      Link_list_const_iter llit = *it;
       edge_in_end_points->push_back(llit->second.second);
     }
-    for (Link_pointer_iter it = vertex_in_links->begin();
+    for (Link_pointer_const_iter it = vertex_in_links->begin();
         it != vertex_in_links->end(); ++it) {
-      Link* link = *it;
+      const Link* link = *it;
       vertex_in_end_points->push_back(link->second.second);
     }
   }
 
   void backup_local_in_links(const std::set<face_descriptor> &extended_faces,
       Link_iter_list *face_in_links, Link_iter_list *edge_in_links, 
-      Link_pointer_list *vertex_in_links) {
+      Link_pointer_list *vertex_in_links) const {
     for (auto it = extended_faces.begin(); it != extended_faces.end(); ++it) {
       face_descriptor fd = *it;
       // backup face in links
@@ -1201,9 +1119,10 @@ public:
   }
 
   void generate_local_links(const Face_tree &face_tree,
-      bool reset_normal_dihedral, Link_iter_list *face_in_links,
-      Link_iter_list *edge_in_links, Link_pointer_list *vertex_in_links,
-      halfedge_descriptor hd, std::set<face_descriptor> *in_link_faces, 
+      bool reset_normal_dihedral, const Link_iter_list &face_in_links,
+      const Link_iter_list &edge_in_links,
+      const Link_pointer_list &vertex_in_links,
+      halfedge_descriptor hd, const std::set<face_descriptor> &in_link_faces,
       const NamedParameters &np) {
     // step 1: update the local feature_intensity around endpoints of hd
     vertex_descriptor vp = get_source_vertex(hd);
@@ -1215,14 +1134,15 @@ public:
     // step 3: generate local out links
     generate_local_out_links(face_tree, hd, np);
     // step 4: generate local in links
-    generate_local_in_links(*in_link_faces, face_in_links, edge_in_links,
+    generate_local_in_links(in_link_faces, face_in_links, edge_in_links,
                             vertex_in_links, np.use_local_aabb_tree);
   }
 
   void generate_local_links(const Face_tree &face_tree,
-      bool reset_normal_dihedral, Link_iter_list *face_in_links,
-      Link_iter_list *edge_in_links, Link_pointer_list *vertex_in_links,
-      vertex_descriptor vd, std::set<face_descriptor> *in_link_faces,
+      bool reset_normal_dihedral, const Link_iter_list &face_in_links,
+      const Link_iter_list &edge_in_links, 
+      const Link_pointer_list &vertex_in_links, vertex_descriptor vd, 
+      const std::set<face_descriptor> &in_link_faces,
       const NamedParameters &np) {
     // step 1: update the local feature_intensity around vd
     update_local_feature_intensity(vd, reset_normal_dihedral, np);
@@ -1231,7 +1151,7 @@ public:
     // step 3: generate local out links
     generate_local_out_links(face_tree, vd, np);
     // step 4: generate local in links
-    generate_local_in_links(*in_link_faces, face_in_links, edge_in_links,
+    generate_local_in_links(in_link_faces, face_in_links, edge_in_links,
                             vertex_in_links, np.use_local_aabb_tree);
   }
 
@@ -1271,8 +1191,8 @@ public:
   }
 
   void generate_local_in_links(const std::set<face_descriptor> &in_link_faces,
-    Link_iter_list *face_in_links, Link_iter_list *edge_in_links,
-    Link_pointer_list *vertex_in_links, bool use_local_aabb_tree) {
+      const Link_iter_list &face_in_links, const Link_iter_list &edge_in_links,
+      const Link_pointer_list &vertex_in_links, bool use_local_aabb_tree) {
     Point_and_primitive_id pp;
     face_descriptor closest_fd;
     if (use_local_aabb_tree) {
@@ -1282,24 +1202,24 @@ public:
                               in_link_faces.end(), mesh_);
       local_face_tree.accelerate_distance_queries();
       // step 2: update the in links
-      for (Link_iter_list_iter it = face_in_links->begin();
-        it != face_in_links->end(); ++it) {
+      for (Link_iter_list_const_iter it = face_in_links.begin();
+        it != face_in_links.end(); ++it) {
         Link_list_iter llit = *it;
         pp = local_face_tree.closest_point_and_primitive(llit->second.first);
         llit->second.second = pp.first;   // update the closest point
         closest_fd = pp.second;
         get_face_in_links(closest_fd).push_back(llit);
       }
-      for (Link_iter_list_iter it = edge_in_links->begin();
-        it != edge_in_links->end(); ++it) {
+      for (Link_iter_list_const_iter it = edge_in_links.begin();
+        it != edge_in_links.end(); ++it) {
         Link_list_iter llit = *it;
         pp = local_face_tree.closest_point_and_primitive(llit->second.first);
         llit->second.second = pp.first;   // update the closest point
         closest_fd = pp.second;
         get_edge_in_links(closest_fd).push_back(llit);
       }
-      for (Link_pointer_iter it = vertex_in_links->begin();
-        it != vertex_in_links->end(); ++it) {
+      for (Link_pointer_const_iter it = vertex_in_links.begin();
+        it != vertex_in_links.end(); ++it) {
         Link *link = *it;
         pp = local_face_tree.closest_point_and_primitive(link->second.first);
         link->second.second = pp.first;   // update the closest point
@@ -1309,8 +1229,8 @@ public:
     }
     else {
       // for each sample, update its closest point, push back to the primitive
-      for (Link_iter_list_iter it = face_in_links->begin();
-        it != face_in_links->end(); ++it) {
+      for (Link_iter_list_const_iter it = face_in_links.begin();
+        it != face_in_links.end(); ++it) {
         Link_list_iter llit = *it;
         pp = get_closest_point_and_primitive(in_link_faces,
           llit->second.first);
@@ -1318,8 +1238,8 @@ public:
         closest_fd = pp.second;
         get_face_in_links(closest_fd).push_back(llit);
       }
-      for (Link_iter_list_iter it = edge_in_links->begin();
-        it != edge_in_links->end(); ++it) {
+      for (Link_iter_list_const_iter it = edge_in_links.begin();
+        it != edge_in_links.end(); ++it) {
         Link_list_iter llit = *it;
         pp = get_closest_point_and_primitive(in_link_faces,
           llit->second.first);
@@ -1327,8 +1247,8 @@ public:
         closest_fd = pp.second;
         get_edge_in_links(closest_fd).push_back(llit);
       }
-      for (Link_pointer_iter it = vertex_in_links->begin();
-        it != vertex_in_links->end(); ++it) {
+      for (Link_pointer_const_iter it = vertex_in_links.begin();
+        it != vertex_in_links.end(); ++it) {
         Link *link = *it;
         pp = get_closest_point_and_primitive(in_link_faces,
           link->second.first);
@@ -1342,9 +1262,10 @@ public:
   void restore_local_links(
       const std::map<face_descriptor, Link_list> &face_out_map,
       const std::map<halfedge_descriptor, Link_list> &edge_out_map,
-      const Link &vertex_out, Link_iter_list *face_in_links,
-      Link_iter_list *edge_in_links, Link_pointer_list *vertex_in_links,
-      vertex_descriptor vd, std::set<face_descriptor> *in_link_faces,
+      const Link &vertex_out, const Link_iter_list &face_in_links,
+      const Link_iter_list &edge_in_links, 
+      const Link_pointer_list &vertex_in_links,
+      vertex_descriptor vd, const std::set<face_descriptor> &in_link_faces,
       const NamedParameters &np) {
     // only for relocate purpose
     // step 1: update the local feature_intensity around vh
@@ -1354,30 +1275,30 @@ public:
     // step 3: restore local out links
     restore_local_out_links(face_out_map, edge_out_map, vertex_out, vd);
     // step 4: generate local in links
-    generate_local_in_links(*in_link_faces, face_in_links, edge_in_links, 
+    generate_local_in_links(in_link_faces, face_in_links, edge_in_links, 
                             vertex_in_links, np.use_local_aabb_tree);
   }
 
   void restore_local_in_links(const Point_list &face_in_end_points,
-      Link_iter_list *face_in_links, const Point_list &edge_in_end_points,
-      Link_iter_list *edge_in_links, const Point_list &vertex_in_end_points,
-      Link_pointer_list *vertex_in_links) {
+      const Link_iter_list &face_in_links, const Point_list &edge_in_end_points,
+      const Link_iter_list &edge_in_links, const Point_list &vertex_in_end_points,
+      const Link_pointer_list &vertex_in_links) {
     // only for simulation purpose
-    Link_iter_list_iter lit;
+    Link_iter_list_const_iter lit;
     Point_const_iter pit;
-    Link_pointer_iter link_iter;
-    for (lit = face_in_links->begin(), pit = face_in_end_points.begin();
-      lit != face_in_links->end(); ++lit, ++pit) {
+    Link_pointer_const_iter link_iter;
+    for (lit = face_in_links.begin(), pit = face_in_end_points.begin();
+      lit != face_in_links.end(); ++lit, ++pit) {
       Link_list_iter it = *lit;
       it->second.second = *pit;
     }
-    for (lit = edge_in_links->begin(), pit = edge_in_end_points.begin();
-      lit != edge_in_links->end(); ++lit, ++pit) {
+    for (lit = edge_in_links.begin(), pit = edge_in_end_points.begin();
+      lit != edge_in_links.end(); ++lit, ++pit) {
       Link_list_iter it = *lit;
       it->second.second = *pit;
     }
-    for (link_iter = vertex_in_links->begin(),
-      pit = vertex_in_end_points.begin(); link_iter != vertex_in_links->end();
+    for (link_iter = vertex_in_links.begin(),
+      pit = vertex_in_end_points.begin(); link_iter != vertex_in_links.end();
       ++link_iter, ++pit) {
       Link *link = *link_iter;
       link->second.second = *pit;
@@ -1387,7 +1308,7 @@ public:
   // queues (for eliminating degenerated faces)
   void fill_degenerated_faces_queue(FT radian_threshold,
                                     DPQueue_face_long *queue) const {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       if (calculate_smallest_radian(*fi) < radian_threshold) {
         halfedge_descriptor hd = get_longest_halfedge(*fi);
@@ -1399,7 +1320,7 @@ public:
   // queues (for splitting long edges)
   void fill_queue_with_long_edges(FT max_squared_length,
     DPQueue_halfedge_long *queue) const {
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
       ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (is_border(hd)) {
@@ -1437,7 +1358,7 @@ public:
     if (np.decrease_max_errors) {
       FT max_se_threshold = max_error_threshold_value * max_error_threshold_value;
       halfedge_descriptor max_error_halfedge;
-      for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+      for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
           fi != mesh_.faces().end(); ++fi) {
         FT max_se = get_face_max_squared_error(*fi);
         if (max_se >= max_se_threshold) {
@@ -1447,7 +1368,7 @@ public:
       }
     }
     // step 2: fill the collapse_candidate queue
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       if (!is_border(*hi)) {
         FT len = length(*hi);
@@ -1465,7 +1386,7 @@ public:
     if (np.decrease_max_errors) {
       FT max_se_threshold = max_error_threshold_value * max_error_threshold_value;
       halfedge_descriptor max_error_halfedge;
-      for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+      for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
           fi != mesh_.faces().end(); ++fi) {
         FT max_se = get_face_max_squared_error(*fi);
         if (max_se >= max_se_threshold) {
@@ -1476,7 +1397,7 @@ public:
     }
     // step 2: fill the small radian queue
     FT min_radian_threshold = to_radian(np.min_angle_threshold);
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       if (!is_border(*hi)) {
         FT radian = calculate_opposite_radian(*hi);
@@ -1489,7 +1410,7 @@ public:
 
   void fill_relocate_candidate_vertices(
     DPQueue_vertex_short *relocate_candidate_queue) const {
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin(); 
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin(); 
         vi != mesh_.vertices().end(); ++vi) {
       FT min_radian = calculate_minimal_radian_incident_to_vertex(*vi);
       relocate_candidate_queue->insert(Vertex_short(*vi, min_radian));
@@ -1958,9 +1879,10 @@ public:
   }
 
   void optimize_vertex_position(const Face_tree &input_face_tree,
-    Link_iter_list *face_in_links, Link_iter_list *edge_in_links,
-    Link_pointer_list *vertex_in_links, vertex_descriptor vd,
-    std::set<face_descriptor> *in_link_faces, const NamedParameters &np) {
+      const Link_iter_list &face_in_links, const Link_iter_list &edge_in_links,
+      const Link_pointer_list &vertex_in_links, vertex_descriptor vd,
+      const std::set<face_descriptor> &in_link_faces,
+      const NamedParameters &np) {
     // precondition: the samples are generated
     for (int i = 0; i < np.vertex_optimize_count; ++i) {
       // step 1: optimize the position of vh
@@ -2009,7 +1931,7 @@ public:
     vertex_descriptor vd = get_target_vertex(hnew);
     if (np.inherit_element_types) {
       Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
-      std::map<vertex_descriptor, bool>::iterator it;
+      std::map<vertex_descriptor, bool>::const_iterator it;
       do {
         it = crease_map.find(get_source_vertex(*hb));
         if (it != crease_map.end()) {   // splitted halfedge
@@ -2029,12 +1951,12 @@ public:
     extended_faces.clear();
     collect_one_ring_faces_incident_to_vertex(vd, &one_ring_faces);
     extend_faces(one_ring_faces, np.stencil_ring_size, &extended_faces);
-    generate_local_links(input_face_tree, false, &face_in_links,
-        &edge_in_links, &vertex_in_links, vd, &extended_faces, np);
+    generate_local_links(input_face_tree, false, face_in_links, edge_in_links,
+                         vertex_in_links, vd, extended_faces, np);
     if (max_error > 0 || np.optimize_after_local_operations) {
       // if reduce error, we definitely optimize; otherweise it depends
-      optimize_vertex_position(input_face_tree, &face_in_links,
-          &edge_in_links, &vertex_in_links, vd, &extended_faces, np);
+      optimize_vertex_position(input_face_tree, face_in_links,
+          edge_in_links, vertex_in_links, vd, extended_faces, np);
     }
     calculate_max_squared_errors(&extended_faces);
     // step 5: add to queue if necessary
@@ -2065,7 +1987,7 @@ public:
         collect_incident_vertices(vd, &one_ring_vertices);
         relocate_vertices(input_face_tree, max_error_threshold_value, 
             max_error, min_radian, reduce_complexity, large_error_queue,
-            small_value_queue, &one_ring_vertices, np);
+            small_value_queue, one_ring_vertices, np);
       }
     }
     return vd;
@@ -2172,7 +2094,7 @@ public:
   }
 
   bool predict_faces_after_collapse(halfedge_descriptor hd, 
-                                   Halfedge_list *halfedges) {
+                                    Halfedge_list *halfedges) const {
     // return whether faces compose a ring, halfedges are inserted in order
     // we use the halfedges to represent the faces
     vertex_descriptor vp = get_source_vertex(hd);
@@ -2268,8 +2190,8 @@ public:
     }
   }
 
-  Point calculate_initial_point_for_collapse(halfedge_descriptor hd, 
-                                       const NamedParameters &np) const {
+  Point calculate_initial_point_for_collapse(
+      halfedge_descriptor hd, const NamedParameters &np) const {
     // If inherit_element_type is true, we use the vertex_type;
     // Otherwise, we use the qem to get intial point for collapse
     if (np.inherit_element_types) {  // use the inherited vertex types
@@ -2313,19 +2235,19 @@ public:
   vertex_descriptor construct_local_mesh(
       const std::set<face_descriptor> &one_ring_faces,
       const std::set<face_descriptor> &extended_faces,
-      Halfedge_list *halfedges, const Point &new_point, bool is_ring,
-      Mesh *mesh) {
+      const Halfedge_list &halfedges, const Point &new_point, bool is_ring,
+      Mesh *mesh) const {
     // construct the 2-manifold surface_mesh
     // step 1: build the point to index map
     std::map<Point, size_t, Point_Comp> points_map;
     //std::set<Point, size_t> points_map;
     points_map.insert(std::make_pair(new_point, points_map.size()));
-    for (auto it = halfedges->begin(); it != halfedges->end(); ++it) {
+    for (auto it = halfedges.begin(); it != halfedges.end(); ++it) {
       const Point &p = get_point(get_target_vertex(*it));
       points_map.insert(std::make_pair(p, points_map.size()));
     }
     if (!is_ring) {
-      halfedge_descriptor hd = *(halfedges->begin());
+      halfedge_descriptor hd = *(halfedges.begin());
       hd = get_opposite(hd);
       const Point &p = get_point(get_target_vertex(hd));
       points_map.insert(std::make_pair(p, points_map.size()));
@@ -2349,7 +2271,7 @@ public:
     // step 2: build the polygon soups
     std::vector<size_t> polygon(3, 0);
     std::vector<std::vector<size_t>> polygons;
-    for (auto it = halfedges->begin(); it != halfedges->end(); ++it) {
+    for (auto it = halfedges.begin(); it != halfedges.end(); ++it) {
       const Point &p1 = get_point(get_source_vertex(*it));
       const Point &p2 = get_point(get_target_vertex(*it));
       polygon[1] = points_map[p1];
@@ -2374,7 +2296,7 @@ public:
     //PMP::repair_polygon_soup(points, polygons);
     //PMP::orient_polygon_soup(points, polygons);
     PMP::polygon_soup_to_polygon_mesh(points, polygons, *mesh);
-    for (Mesh::Vertex_range::iterator vi = mesh->vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh->vertices().begin();
         vi != mesh->vertices().end(); ++vi) {
       if (mesh->point(*vi) == new_point) {
         return *vi;
@@ -2387,8 +2309,8 @@ public:
       FT max_error_threshold_value, FT min_radian, bool reduce_complexity,
       DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_value_queue,
-      Link_iter_list *face_in_links, Link_iter_list *edge_in_links,
-      Link_pointer_list *vertex_in_links, halfedge_descriptor hd,
+      const Link_iter_list &face_in_links, const Link_iter_list &edge_in_links,
+      const Link_pointer_list &vertex_in_links, halfedge_descriptor hd,
       Point new_point, const NamedParameters &np) {
     // step 1: backup the edge type if necessary
     std::map<vertex_descriptor, bool> crease_map;
@@ -2415,7 +2337,7 @@ public:
     if (np.inherit_element_types) {
       Halfedge_around_target_circulator 
           hb(mesh_.halfedge(v_joined), mesh_), he(hb);
-      std::map<vertex_descriptor, bool>::iterator it;
+      std::map<vertex_descriptor, bool>::const_iterator it;
       do {
         it = crease_map.find(get_source_vertex(*hb));
         if (it != crease_map.end()) { // the merged halfedge
@@ -2435,7 +2357,7 @@ public:
     collect_one_ring_faces_incident_to_vertex(v_joined, &one_ring_faces);
     extend_faces(one_ring_faces, np.stencil_ring_size, &extended_faces);
     generate_local_links(input_face_tree, true, face_in_links, edge_in_links,
-        vertex_in_links, v_joined, &extended_faces, np);
+                         vertex_in_links, v_joined, extended_faces, np);
     calculate_max_squared_errors(&extended_faces);
     // step 5: add to queue if necessary
     if (small_value_queue != NULL) {
@@ -2464,7 +2386,7 @@ public:
         collect_incident_vertices(v_joined, &one_ring_vertices);
         relocate_vertices(input_face_tree, max_error_threshold_value, -1.0,
             min_radian, reduce_complexity, large_error_queue,
-            small_value_queue, &one_ring_vertices, np);
+            small_value_queue, one_ring_vertices, np);
       }
     }
     return v_joined;
@@ -2558,8 +2480,8 @@ public:
     one_ring_faces.insert(get_face(hd));
     one_ring_faces.insert(get_face(get_opposite(hd)));
     extend_faces(one_ring_faces, np.stencil_ring_size, &extended_faces);
-    generate_local_links(input_face_tree, false, &face_in_links,
-        &edge_in_links, &vertex_in_links, hd, &extended_faces, np);
+    generate_local_links(input_face_tree, false, face_in_links, edge_in_links,
+                         vertex_in_links, hd, extended_faces, np);
     calculate_max_squared_errors(&extended_faces);
     FT error_after;
     calculate_local_maximal_error(extended_faces, &error_after);
@@ -2578,8 +2500,8 @@ public:
       one_ring_faces.insert(get_face(hd));
       one_ring_faces.insert(get_face(get_opposite(hd)));
       extend_faces(one_ring_faces, np.stencil_ring_size, &extended_faces);
-      generate_local_links(input_face_tree, false, &face_in_links,
-          &edge_in_links, &vertex_in_links, hd, &extended_faces, np);
+      generate_local_links(input_face_tree, false, face_in_links, 
+          edge_in_links, vertex_in_links, hd, extended_faces, np);
       calculate_max_squared_errors(&extended_faces);
     }
     // step 7: add to queue if necessary
@@ -2604,7 +2526,7 @@ public:
         FT local_min_radian = calculate_local_minimal_radian(faces);
         relocate_vertices(input_face_tree, max_error_threshold_value,
             max_error, local_min_radian, reduce_complexity, large_error_queue,
-            small_value_queue, &vertices, np);
+            small_value_queue, vertices, np);
       }
     }
     return flipped ? hd : get_null_halfedge();
@@ -2654,7 +2576,7 @@ public:
 
   // relocate
   bool relocate_would_cause_wrinkle(const Point &new_point, 
-                                    vertex_descriptor vd) {
+                                    vertex_descriptor vd) const {
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
       if (!is_border(*hb)) {
@@ -2731,12 +2653,12 @@ public:
     Point old_point = get_point(vd);  // backup position in case rolling back
     relocate_vertex_point(vd, new_point);
     // step 5: update local links (optimized included if necessary)
-    generate_local_links(input_face_tree, false, &face_in_links,
-        &edge_in_links, &vertex_in_links, vd, &extended_faces, np);
+    generate_local_links(input_face_tree, false, face_in_links,
+        edge_in_links, vertex_in_links, vd, extended_faces, np);
     if (max_error > 0 || np.optimize_after_local_operations) {
       // if reduce error, we definitely optimize; otherweise it depends
-      optimize_vertex_position(input_face_tree, &face_in_links, &edge_in_links,
-          &vertex_in_links, vd, &extended_faces, np);
+      optimize_vertex_position(input_face_tree, face_in_links, edge_in_links,
+          vertex_in_links, vd, extended_faces, np);
     }
     calculate_max_squared_errors(&extended_faces);
     FT error, radian;
@@ -2754,9 +2676,9 @@ public:
     }
     if (!relocated) {
       relocate_vertex_point(vd, old_point);   // restore back the position
-      restore_local_links(face_out_map, edge_out_map, vertex_out, 
-          &face_in_links, &edge_in_links, &vertex_in_links, vd,
-          &extended_faces, np);
+      restore_local_links(face_out_map, edge_out_map, vertex_out,
+          face_in_links, edge_in_links, vertex_in_links,
+          vd, extended_faces, np);
       calculate_max_squared_errors(&extended_faces);
     }
     // step 7: add the queue if necesary
@@ -2770,7 +2692,7 @@ public:
   }
 
   Point calculate_initial_point_for_relocate(const Face_tree &face_tree,
-    vertex_descriptor vd, const NamedParameters &np) {
+    vertex_descriptor vd, const NamedParameters &np) const {
     FT sum_area = 0.0;
     Halfedge_around_target_circulator hb(mesh_.halfedge(vd), mesh_), he(hb);
     do {
@@ -2800,10 +2722,10 @@ public:
       FT max_error_threshold_value, FT max_error, FT min_radian,
       bool reduce_complexity, DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_radian_queue,
-      std::set<vertex_descriptor> *vertices, const NamedParameters &np) {
+      const std::set<vertex_descriptor> &vertices, const NamedParameters &np) {
     // step 1: construct the vertex_map to make bigger distance relocate first
     std::map<FT, vertex_descriptor> vertex_map;
-    for (auto it = vertices->begin(); it != vertices->end(); ++it) {
+    for (auto it = vertices.begin(); it != vertices.end(); ++it) {
       vertex_descriptor vd = *it;
       Point p = calculate_initial_point_for_relocate(input_face_tree, vd, np);
       vertex_map[CGAL::squared_distance(get_point(vd), p)] = vd;
@@ -2837,7 +2759,7 @@ public:
     // step 2: relocate these incident vertices
     return relocate_vertices(input_face_tree, max_error_threshold_value,
       max_error, min_radian, reduce_complexity, large_error_queue,
-      small_value_queue, &incident_vertices, np);
+      small_value_queue, incident_vertices, np);
   }
 
   // vertex_descriptor access
@@ -2948,7 +2870,7 @@ public:
   halfedge_descriptor get_minimal_radian(FT *minimal_radian) {
     *minimal_radian = CGAL_PI;
     halfedge_descriptor minimal_radian_hd;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       FT radian = calculate_smallest_radian(*fi);
       if (radian < *minimal_radian) {
@@ -3413,7 +3335,7 @@ public:
 
   // face_descriptor collection
   void collect_all_faces(std::set<face_descriptor> *faces) const {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       faces->insert(*fi);
     }
@@ -3470,7 +3392,7 @@ public:
   }
 
   void extend_faces(const std::set<face_descriptor> &one_ring_faces,
-    int stencil_ring_size, std::set<face_descriptor> *extended_faces) const {
+      int stencil_ring_size, std::set<face_descriptor> *extended_faces) const {
     extended_faces->clear();
     extended_faces->insert(one_ring_faces.begin(), one_ring_faces.end());
     for (int i = 0; i < stencil_ring_size; ++i) {
@@ -3482,7 +3404,7 @@ public:
   Bbox calculate_bounding_box() const {
     Bbox bbox = Bbox(DOUBLE_MAX, DOUBLE_MAX, DOUBLE_MAX, 
                      DOUBLE_MIN, DOUBLE_MIN, DOUBLE_MIN);
-    Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
     bbox = get_point(*vi).bbox();
     for (; vi != mesh_.vertices().end(); ++vi) {
       bbox = bbox + get_point(*vi).bbox();
@@ -3511,12 +3433,40 @@ public:
     }
     else {
       FT sum_length = 0.0;
-      for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+      for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
           ei != mesh_.edges().end(); ++ei) {
         sum_length += length(mesh_.halfedge(*ei));
       }
       return sum_length / mesh_.number_of_edges();
     }
+  }
+
+  int get_face_out_link_count() const {
+    size_t face_out_link_count = 0;
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
+        fi != mesh_.faces().end(); ++fi) {
+      const Link_list &face_out_links = get_face_out_links(*fi);
+      face_out_link_count += face_out_links.size();
+    }
+    return static_cast<int>(face_out_link_count);
+  }
+
+  int get_edge_out_link_count() const {
+    size_t edge_out_link_count = 0;
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin(); 
+        ei != mesh_.edges().end(); ++ei) {
+      halfedge_descriptor hd = mesh_.halfedge(*ei);
+      if (get_halfedge_normal_dihedral(hd) == -1.0) {
+        hd = get_opposite(hd);
+      }
+      const Link_list &edge_out_links = get_halfedge_out_links(hd);
+      edge_out_link_count += edge_out_links.size();
+    }
+    return static_cast<int>(edge_out_link_count);
+  }
+
+  int get_vertex_out_link_count() const {
+    return static_cast<int>(mesh_.number_of_vertices());
   }
 
   void trace_properties() {
@@ -3538,15 +3488,15 @@ public:
     FT max_radian = 0.0;
     FT avg_min_radian = 0.0;
     size_t min_out_link_count = MAX_VALUE;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
-        fi != mesh_.faces().end(); ++fi) {
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
+      fi != mesh_.faces().end(); ++fi) {
       FT face_area = area(*fi);
       min_face_area = CGAL::min(min_face_area, face_area);
       const Link_list &face_out_links = get_face_out_links(*fi);
-      min_out_link_count = CGAL::min(min_out_link_count, 
-                                     face_out_links.size());
+      min_out_link_count = CGAL::min(min_out_link_count,
+        face_out_links.size());
       max_squared_error = CGAL::max(max_squared_error,
-                                    get_face_max_squared_error(*fi));
+        get_face_max_squared_error(*fi));
       FT smallest_radian = calculate_smallest_radian(*fi);
       min_radian = CGAL::min(min_radian, smallest_radian);
       avg_min_radian += smallest_radian;
@@ -3561,49 +3511,21 @@ public:
     std::cout << "Average quality: " << calculate_avg_quality() << std::endl;
     std::cout << "Minimal angle: " << to_angle(min_radian) << std::endl;
     std::cout << "Average minimal angle: "
-              << to_angle(avg_min_radian) << std::endl;
+      << to_angle(avg_min_radian) << std::endl;
     std::cout << "Maximal angle: " << to_angle(max_radian) << std::endl;
     std::cout << "Maximal error: " << max_error << std::endl;
     std::cout << "Maximal error ratio: "
-              << max_error / diagonal_length * 100 << "%" << std::endl;
+      << max_error / diagonal_length * 100 << "%" << std::endl;
     std::cout << "RMS face error " << rms_error << std::endl;
     std::cout << "RMS face error ratio: "
-              << rms_error / diagonal_length * 100 << "%" << std::endl;
+      << rms_error / diagonal_length * 100 << "%" << std::endl;
     std::cout << "Angles smaller than 30бу: "
-              << calculate_smaller_angle_ratio(30.0) * 100 << "%" << std::endl;
+      << calculate_smaller_angle_ratio(30.0) * 100 << "%" << std::endl;
     std::cout << "Regular vertices ratio: "
-              << calculate_regular_vertex_ratio() * 100 << "%" << std::endl;
+      << calculate_regular_vertex_ratio() * 100 << "%" << std::endl;
     std::cout << "Minimal face area: " << min_face_area << std::endl;
     std::cout << "Minimal face out link count: "
-              << min_out_link_count << std::endl;
-  }
-
-  int get_face_out_link_count() const {
-    size_t face_out_link_count = 0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
-        fi != mesh_.faces().end(); ++fi) {
-      const Link_list &face_out_links = get_face_out_links(*fi);
-      face_out_link_count += face_out_links.size();
-    }
-    return static_cast<int>(face_out_link_count);
-  }
-
-  int get_edge_out_link_count() const {
-    size_t edge_out_link_count = 0;
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin(); 
-        ei != mesh_.edges().end(); ++ei) {
-      halfedge_descriptor hd = mesh_.halfedge(*ei);
-      if (get_halfedge_normal_dihedral(hd) == -1.0) {
-        hd = get_opposite(hd);
-      }
-      const Link_list &edge_out_links = get_halfedge_out_links(hd);
-      edge_out_link_count += edge_out_links.size();
-    }
-    return static_cast<int>(edge_out_link_count);
-  }
-
-  int get_vertex_out_link_count() const {
-    return static_cast<int>(mesh_.number_of_vertices());
+      << min_out_link_count << std::endl;
   }
 
   // IO
@@ -3794,7 +3716,7 @@ public:
 
   FT get_max_face_sample_capacity() const {
     FT max_capacity = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       const Link_list &face_out_links = get_face_out_links(*fi);
       FT capacity = area(*fi) / face_out_links.size();
@@ -3805,7 +3727,7 @@ public:
 
   FT get_max_edge_sample_capacity() const {
     FT max_capacity = 0.0;
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
       ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -3824,7 +3746,7 @@ public:
 
   FT get_max_vertex_sample_capacity() const {
     FT max_capacity = 0.0, weight = 0.0, feature_intensity = 0.0;
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
       vi != mesh_.vertices().end(); ++vi) {
       const Link &link = get_vertex_out_link(*vi);
       weight = link.first;
@@ -3844,7 +3766,7 @@ public:
 
   FT get_max_face_sample_weight() const {
     FT max_weight = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       const Link_list &face_out_links = get_face_out_links(*fi);
       for (auto it = face_out_links.begin();
@@ -3858,7 +3780,7 @@ public:
 
   FT get_max_edge_sample_weight() const {
     FT max_weight = 0.0;
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
       ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -3876,7 +3798,7 @@ public:
 
   FT get_max_vertex_sample_weight() const {
     FT max_weight = 0.0;
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
       vi != mesh_.vertices().end(); ++vi) {
       const Link &link = get_vertex_out_link(*vi);
       max_weight = CGAL::max(max_weight, link.first);
@@ -3891,9 +3813,77 @@ public:
   }
   
 private:
+  bool is_border(halfedge_descriptor hd) const { return mesh_.is_border(hd); }
+
+  void clear_face_links(face_descriptor fd) {
+    set_face_out_links(fd, Link_list());
+    set_face_in_links(fd, Link_iter_list());
+    set_edge_in_links(fd, Link_iter_list());
+    set_vertex_in_links(fd, Link_pointer_list());
+  }
+
+  void clear_halfedge_links(halfedge_descriptor hd) {
+    set_halfege_out_links(hd, Link_list());
+  }
+
+  void clear_vertex_links(vertex_descriptor vd) {
+    set_vertex_out_link(vd, Link());
+  }
+
+  // properties access
+  void reset_face_properties(face_descriptor fd, face_descriptor fd_source) {
+    // step 1: reset the basic properties
+    if (fd_source == get_null_face()) {
+      set_face_tag(fd, 0);
+      set_face_normal(fd, CGAL::NULL_VECTOR);
+      set_face_max_squared_error(fd, 0.0);
+    }
+    else {
+      set_face_tag(fd, get_face_tag(fd_source));
+      set_face_normal(fd, get_face_normal(fd_source));
+      set_face_max_squared_error(fd, get_face_max_squared_error(fd_source));
+    }
+    // step 2: reset the sample links
+    clear_face_links(fd);
+  }
+
+  void reset_halfedge_properties(halfedge_descriptor hd,
+    halfedge_descriptor hd_source) {
+    // step 1: reset the basic properties
+    if (hd_source == get_null_halfedge()) {
+      set_halfedge_tag(hd, 0);
+      set_halfedge_normal_dihedral(hd, -1.0);
+      set_halfedge_is_crease(hd, false);
+    }
+    else {
+      set_halfedge_tag(hd, get_halfedge_tag(hd_source));
+      set_halfedge_normal_dihedral(hd, get_halfedge_normal_dihedral(hd_source));
+      set_halfedge_is_crease(hd, get_halfedge_is_crease(hd_source));
+    }
+    // step 2: reset the sample links
+    clear_halfedge_links(hd);
+  }
+
+  void reset_vertex_properties(vertex_descriptor vd,
+    vertex_descriptor vd_source) {
+    // step 1: reset the basic properties
+    if (vd_source == get_null_vertex()) {
+      set_vertex_tag(vd, 0);
+      set_vertex_max_dihedral(vd, -1.0);
+      set_vertex_gaussian_curvature(vd, 0.0);
+    }
+    else {
+      set_vertex_tag(vd, get_vertex_tag(vd_source));
+      set_vertex_max_dihedral(vd, get_vertex_max_dihedral(vd_source));
+      set_vertex_gaussian_curvature(vd, get_vertex_gaussian_curvature(vd_source));
+    }
+    // step 2: reset the sample links 
+    clear_vertex_links(vd);
+  }
+
   // sample and links
-  void clear_local_in_links(std::set<face_descriptor> *faces) {
-    for (auto it = faces->begin(); it != faces->end(); ++it) {
+  void clear_local_in_links(const std::set<face_descriptor> &faces) {
+    for (auto it = faces.begin(); it != faces.end(); ++it) {
       // step 1: clear the links
       face_descriptor fd = *it;
       Link_iter_list &face_in_links = get_face_in_links(fd);
@@ -3931,7 +3921,7 @@ private:
 
   // max errors
   void reset_face_max_squared_errors(FT value) {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       set_face_max_squared_error(*fi, value);
     }
@@ -3939,7 +3929,7 @@ private:
 
   void update_face_in_max_squared_errors() {
     FT se = 0.0;    // squared error
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       Link_iter_list &face_in_links = get_face_in_links(*fi);
       for (Link_iter_list_iter it = face_in_links.begin(); 
@@ -3954,7 +3944,7 @@ private:
 
   void update_face_out_max_squared_errors() {
     FT se = 0.0;    // squared error
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
       fi != mesh_.faces().end(); ++fi) {
       Link_list &face_out_links = get_face_out_links(*fi);
       for (Link_list_iter it = face_out_links.begin();
@@ -3968,7 +3958,7 @@ private:
 
   void update_edge_in_max_squared_errors() {
     FT max_se = 0, se = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       Link_iter_list &edge_in_links = get_edge_in_links(*fi);
       for (Link_iter_list_iter it = edge_in_links.begin(); 
@@ -3984,7 +3974,7 @@ private:
 
   void update_edge_out_max_squared_errors() {
     FT se = 0.0;
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
       ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -4009,7 +3999,7 @@ private:
 
   void update_vertex_in_max_squared_errors() {
     FT se = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin(); 
       fi != mesh_.faces().end(); ++fi) {
       Link_pointer_list &vertex_in_links = get_vertex_in_links(*fi);
       for (Link_pointer_iter it = vertex_in_links.begin();
@@ -4023,7 +4013,7 @@ private:
 
   void update_vertex_out_max_squared_errors() {
     FT se = 0.0;
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin(); 
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin(); 
       vi != mesh_.vertices().end(); ++vi) {
       const Link &link = get_vertex_out_link(*vi);
       se = CGAL::squared_distance(link.second.first, link.second.second);
@@ -4040,7 +4030,7 @@ private:
   // feature intensities
   void calculate_vertex_feature_intensities(const NamedParameters &np) {
     // precondition: the halfedges' normal dihedrals have been updated
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
         vi != mesh_.vertices().end(); ++vi) {
       calculate_vertex_feature_intensity(*vi, np);
     }
@@ -4087,7 +4077,7 @@ private:
   }
 
   void calculate_edge_feature_intensities(const NamedParameters &np) {
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
         ei != mesh_.edges().end(); ++ei) {
       calculate_edge_feature_intensity(*ei, false, np);
     }
@@ -4130,7 +4120,7 @@ private:
 
   void calculate_edge_classifications(FT feature_control_delta) {
     // precondition: edge and normal feature intensities has been computed
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin(); 
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin(); 
         vi != mesh_.vertices().end(); ++vi) {
       Halfedge_list effective_edges;
       collect_effective_edges_in_one_ring(feature_control_delta, *vi,
@@ -4231,7 +4221,7 @@ private:
   // polyhedron properties
   FT calculate_avg_quality() const {
     FT sum_quality = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       sum_quality += calculate_quality(*fi);
     }
@@ -4245,7 +4235,7 @@ private:
 
   FT calculate_min_quality() const {
     FT min_quality = DOUBLE_MAX, quality = 0.0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin(); 
         fi != mesh_.faces().end(); ++fi) {
       quality = calculate_quality(*fi);
       min_quality = CGAL::min(min_quality, quality);
@@ -4256,7 +4246,7 @@ private:
   FT calculate_rms_distance() const {
     FT rms_distance = 0.0;
     size_t nb_samples = 0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       // face in links
       const Link_iter_list &face_in_links = get_face_in_links(*fi);
@@ -4290,7 +4280,7 @@ private:
       nb_samples += vertex_in_links.size();
     }
     // face out links
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       const Link_list &face_out_links = get_face_out_links(*fi);
       for (Link_list_const_iter cit = face_out_links.begin(); 
@@ -4303,7 +4293,7 @@ private:
       nb_samples += face_out_links.size();
     }
     // edge out links
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin(); 
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin(); 
         ei != mesh_.edges().end(); ++ei) {
       halfedge_descriptor hd = mesh_.halfedge(*ei);
       if (get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -4320,7 +4310,7 @@ private:
       nb_samples += edge_out_links.size();
     }
     // vertex out links
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin(); 
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin(); 
         vi != mesh_.vertices().end(); ++vi) {
       const Link &link = get_vertex_out_link(*vi);
       const Point &start = link.second.first;
@@ -4345,7 +4335,7 @@ private:
     FT min_length = MAX_VALUE;
     FT max_length = 0.0;
     int nb_edges = 0;
-    for (Mesh::Edge_range::iterator ei = mesh_.edges().begin();
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
         ei != mesh_.edges().end(); ++ei) {
       const FT edge_length = length(mesh_.halfedge(*ei));
       sum_length += edge_length;
@@ -4361,7 +4351,7 @@ private:
 
   FT calculate_regular_vertex_ratio() const {
     int nb_regular_vertices = 0;
-    for (Mesh::Vertex_range::iterator vi = mesh_.vertices().begin();
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
         vi != mesh_.vertices().end(); ++vi) {
       nb_regular_vertices += is_regular(*vi);
     }
@@ -4377,7 +4367,7 @@ private:
   FT calculate_smaller_angle_ratio(FT angle) const {
     FT radian = to_radian(angle);
     int nb_small_angle_faces = 0;
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin();
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
         fi != mesh_.faces().end(); ++fi) {
       FT smallest_radian = calculate_smallest_radian(*fi);
       nb_small_angle_faces += smallest_radian < radian;
@@ -4394,7 +4384,7 @@ private:
   unsigned int nb_boundaries() {     // count the number of boundaries
     unsigned int nb = 0;
     tag_halfedge(0);
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       if (is_border(*hi) && get_halfedge_tag(*hi) == 0) {
         ++nb;
@@ -4411,7 +4401,7 @@ private:
   unsigned int nb_components() {       // count the number of components
     unsigned int nb = 0;
     tag_faces(0);
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin(); 
         fi != mesh_.faces().end(); ++fi) {
       if (get_face_tag(*fi) == 0) {
         ++nb;
@@ -4442,14 +4432,14 @@ private:
   }
 
   void tag_faces(const int tag) {
-    for (Mesh::Face_range::iterator fi = mesh_.faces().begin(); 
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin(); 
         fi != mesh_.faces().end(); ++fi) {
       set_face_tag(*fi, tag);
     }
   }
 
   void tag_halfedge(const int tag) {
-    for (Mesh::Halfedge_range::iterator hi = mesh_.halfedges().begin();
+    for (Mesh::Halfedge_range::const_iterator hi = mesh_.halfedges().begin();
         hi != mesh_.halfedges().end(); ++hi) {
       set_halfedge_tag(*hi, tag);
     }
@@ -4572,108 +4562,6 @@ private:
     return true;
   }
 
-  /*bool join_faces_before_collapse(halfedge_descriptor hd) {
-    assert(!is_border(hd));
-    if (is_border(get_opposite(hd))) {
-      return join_faces_before_collapse_boundary_case(hd);
-    }
-    else {
-      return join_faces_before_collapse_inner_case(hd);
-    }
-  }
-
-  bool join_faces_before_collapse_inner_case(halfedge_descriptor hd) {
-
-    halfedge_descriptor qr = mesh_.next(hd);
-    halfedge_descriptor rp = mesh_.prev(hd);
-    halfedge_descriptor ps = mesh_.next(get_opposite(hd));
-    halfedge_descriptor sq = mesh_.prev(get_opposite(hd));
-    face_descriptor frq = get_face(get_opposite(qr));
-    face_descriptor fpr = get_face(get_opposite(rp));
-    face_descriptor fsp = get_face(get_opposite(ps));
-    face_descriptor fqs = get_face(get_opposite(sq));
-    // check if faces are different
-    if (valid_join_face_pair(fsp, frq)) {
-      if (valid_join_face(ps) && valid_join_face(qr)) {
-        CGAL::Euler::join_face(ps, mesh_);
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fsp, fpr)) {
-      if (valid_join_face(ps) && valid_join_face(rp)) {
-        CGAL::Euler::join_face(ps, mesh_);
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fqs, frq)) {
-      if (valid_join_face(sq) && valid_join_face(qr)) {
-        CGAL::Euler::join_face(sq, mesh_);
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    if (valid_join_face_pair(fqs, fpr)) {
-      if (valid_join_face(sq) && valid_join_face(rp)) {
-        CGAL::Euler::join_face(sq, mesh_);
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    std::cerr << red << "join faces failed." << white << std::endl;
-    return false;
-  }
-
-  bool join_faces_before_collapse_boundary_case(halfedge_descriptor hd) {
-    CGAL_precondition(is_border(get_opposite(hd)));
-    halfedge_descriptor qr = mesh_.next(hd);
-    halfedge_descriptor rp = mesh_.next(mesh_.next(hd));
-    face_descriptor frq = get_face(get_opposite(qr));
-    face_descriptor fpr = get_face(get_opposite(rp));
-    if (frq != mesh_.null_face()) {
-      if (valid_join_face(qr)) {
-        CGAL::Euler::join_face(qr, mesh_);
-        return true;
-      }
-    }
-    else if (fpr != mesh_.null_face()) {
-      if (valid_join_face(rp)) {
-        CGAL::Euler::join_face(rp, mesh_);
-        return true;
-      }
-    }
-    // should never come here
-    std::cerr << red << "Error in join faces in boundary case" 
-              << white << std::endl;
-    return false;
-  }
-
-  bool valid_join_face_pair(face_descriptor fd1, face_descriptor fd2) const {
-    if (fd1 == fd2) {
-      return false;
-    }
-    if (fd1 == mesh_.null_face()) {
-      return false;
-    }
-    if (fd2 == mesh_.null_face()) {
-      return false;
-    }
-    return true;
-  }
-
-  bool valid_join_face(halfedge_descriptor hd) const {
-    Halfedge_around_face_circulator h1(hd, mesh_);
-    if (circulator_size(h1) < 3) {
-      return false;
-    }
-    Halfedge_around_face_circulator h2(get_opposite(hd), mesh_);
-    if (circulator_size(h2) < 3) {
-      return false;
-    }
-    return true;
-  }*/
-
   bool edge_flip_would_improve_valence(halfedge_descriptor hd) const {
     // incident vertices
     vertex_descriptor a = get_target_vertex(hd);
@@ -4740,6 +4628,7 @@ private:
 
 private:
   Mesh &mesh_;
+
   Face_tags face_tags_;                         // face related properties
   Face_normals face_normals_;
   Face_max_errors face_max_squared_errors_;
@@ -4747,10 +4636,12 @@ private:
   Face_link_iter_list face_in_links_;
   Face_link_iter_list edge_in_links_;
   Face_link_pointer_list vertex_in_links_;
+
   Halfedge_tags halfedge_tags_;                 // halfedge related properties
   Halfedge_normal_dihedrals halfedge_normal_dihedrals_;
   Halfedge_are_creases halfedge_are_creases_;
   Halfedge_link_list halfedge_out_links_;
+
   Vertex_tags vertex_tags_;                     // vertex related properties
   Vertex_max_dihedral vertex_max_dihedrals_;
   Vertex_gaussian_curvature vertex_gaussian_curvatures_;

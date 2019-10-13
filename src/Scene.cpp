@@ -67,18 +67,6 @@ Scene::~Scene() {
     delete m_pRemesh;
     m_pRemesh = NULL;
   }
-  /*if (m_pSurfacemeshInput != NULL) {
-    delete m_pSurfacemeshInput;
-    m_pSurfacemeshInput = NULL;
-  }
-  if (m_pSurfacemeshRemesh != NULL) {
-    delete m_pSurfacemeshRemesh;
-    m_pSurfacemeshRemesh = NULL;
-  }
-  if (m_minangle_remesher != NULL) {
-    delete m_minangle_remesher;
-    m_minangle_remesher = NULL;
-  }*/
 }
 
 void Scene::update_bbox() {
@@ -118,7 +106,6 @@ void Scene::compile_shaders() {
       std::cerr << "VBO Creation FAILED" << std::endl;
     }
   }
-
   // step 2: compile the rendering_program
   const char vertex_source[] = {        // vertex source code
     "#version 120 \n"
@@ -1286,7 +1273,7 @@ void Scene::compute_mesh_faces(bool is_input, Color face_color,
   FT max_value = (sum_theta_value + 1) * (dihedral_theta_value + 1) - 1;
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     face_descriptor fd = *fi;
     const Normal &normal = mesh_properties->get_face_normal(fd);
@@ -1349,7 +1336,7 @@ void Scene::compute_all_voronois(bool is_input, FT sum_theta_value,
   }
   // step 2: compute all sample cells and cell boundaries
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     const Normal &normal = mesh_properties->get_face_normal(*fi);
     Point_list samples;
@@ -1398,7 +1385,7 @@ void Scene::compute_vertex_voronois(bool is_input, FT sum_theta_value,
   // step 2: compute the cell and cell boundaries
   Color color;
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     if (m_render_type == RenderType::k_classifications) {
       color = get_vertex_classification_color(mesh_properties, *vi);
@@ -1475,7 +1462,7 @@ void Scene::compute_face_voronois(bool is_input, FT sum_theta_value,
   }
   // step 2: compute face_voronoi cell and boundaries
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     const Normal &normal = mesh_properties->get_face_normal(*fi);
     Point_list samples;
@@ -1499,7 +1486,7 @@ void Scene::compute_edge_normal_dihedrals(bool is_input,
   FT min_value = 0.0, max_value = dihedral_theta_value;
   Color color;
   // step 1: compute the faces
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
       ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -1526,7 +1513,7 @@ void Scene::compute_edge_normal_dihedrals(bool is_input,
     }
   }
   // step 2: compute the edges
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
     fi != mesh.faces().end(); ++fi) {
     halfedge_descriptor hd = mesh.halfedge(*fi);
     const Point &a = mesh.point(mesh.source(hd));
@@ -1564,7 +1551,7 @@ void Scene::compute_edge_sample_properties(bool is_input, FT sum_theta_value,
   }
   // step 2: compute the faces and faces
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -1621,7 +1608,7 @@ void Scene::compute_edge_sample_properties(bool is_input, FT sum_theta_value,
     }
   }
   // step 3: compute the rest of the edges
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     Point c = mesh_properties->centroid(*fi);
     halfedge_descriptor hd = mesh.halfedge(*fi);
@@ -1657,7 +1644,7 @@ void Scene::compute_all_samples(bool is_input,
   // step 1: face out samples
   compute_face_samples(mesh_properties, pos_samples);
   // step 2: edge out samples
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -1672,7 +1659,7 @@ void Scene::compute_all_samples(bool is_input,
     }
   }
   // step 3: vertex out samples
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     const Link &link = mesh_properties->get_vertex_out_link(*vi);
     const Point &p = link.second.first;
@@ -1684,7 +1671,7 @@ void Scene::compute_face_samples(bool is_input,
                                  std::vector<float> *pos_samples) const {
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
     fi != mesh.faces().end(); ++fi) {
     const Link_list &face_out_links = mesh_properties->get_face_out_links(*fi);
     for (auto it = face_out_links.begin(); it != face_out_links.end(); ++it) {
@@ -1777,7 +1764,6 @@ void Scene::get_all_sample_normalized_colors(bool is_input,
 void Scene::get_edge_sample_normalized_colors(bool is_input,
     halfedge_descriptor hd, FT min_value, FT max_value, FT h,
     Color_list *colors) const {
-  // precondition: fd is not a border halfedge
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
   FT face_area = mesh_properties->area(mesh.face(hd));   // the face area
@@ -1913,7 +1899,7 @@ void Scene::compute_classified_edges(bool is_input,
   pos_special_edges->resize(0);
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -1932,7 +1918,7 @@ void Scene::compute_vertices(bool is_input,
                              std::vector<float> *pos_samples) const {
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     const Point &p = mesh.point(*vi);
     compute_point(p, pos_samples);
@@ -1943,7 +1929,7 @@ void Scene::compute_edges(bool is_input, std::vector<float> *pos_edges) const {
   pos_edges->resize(0);
   const Mesh_properties* mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
       ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     compute_halfedge(mesh, hd, pos_edges);
@@ -2002,7 +1988,7 @@ void Scene::compute_face_start_points(bool is_input,
   pos_face_start_point->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     const Link_list &face_out_links = mesh_properties->get_face_out_links(*fi);
     for (auto it = face_out_links.begin();
@@ -2018,7 +2004,7 @@ void Scene::compute_face_end_points(bool is_input,
   pos_face_end_point->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
       fi != mesh.faces().end(); ++fi) {
     const Link_list &face_out_links = mesh_properties->get_face_out_links(*fi);
     for (auto it = face_out_links.begin();
@@ -2034,7 +2020,7 @@ void Scene::compute_face_links(bool is_input,
   pos_face_links->clear();
   const Mesh_properties* mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Face_range::iterator fi = mesh.faces().begin();
+  for (Mesh::Face_range::const_iterator fi = mesh.faces().begin();
     fi != mesh.faces().end(); ++fi) {
     const Link_list &face_out_links = mesh_properties->get_face_out_links(*fi);
     for (auto it = face_out_links.begin();
@@ -2052,7 +2038,7 @@ void Scene::compute_edge_start_points(bool is_input,
   pos_edge_start_points->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -2073,7 +2059,7 @@ void Scene::compute_edge_end_points(bool is_input,
   pos_edge_end_points->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -2094,7 +2080,7 @@ void Scene::compute_edge_links(bool is_input,
   pos_edge_links->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Edge_range::iterator ei = mesh.edges().begin();
+  for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
     halfedge_descriptor hd = mesh.halfedge(*ei);
     if (mesh_properties->get_halfedge_normal_dihedral(hd) == -1.0) {
@@ -2117,7 +2103,7 @@ void Scene::compute_vertex_start_points(bool is_input,
   pos_vertex_start_points->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     const Link &link = mesh_properties->get_vertex_out_link(*vi);
     compute_point(link.second.first, pos_vertex_start_points);
@@ -2129,7 +2115,7 @@ void Scene::compute_vertex_end_points(bool is_input,
   pos_vertex_end_points->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     const Link &link = mesh_properties->get_vertex_out_link(*vi);
     compute_point(link.second.second, pos_vertex_end_points);
@@ -2141,7 +2127,7 @@ void Scene::compute_vertex_links(bool is_input,
   pos_vertex_links->clear();
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
-  for (Mesh::Vertex_range::iterator vi = mesh.vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
       vi != mesh.vertices().end(); ++vi) {
     const Link &link = mesh_properties->get_vertex_out_link(*vi);
     const Point &p = link.second.first;
@@ -2859,7 +2845,7 @@ void Scene::normalize(FT radius, Mesh *mesh) const {
   // step 1: calculate the bounding box
   Bbox bbox = Bbox(DOUBLE_MAX, DOUBLE_MAX, DOUBLE_MAX,
                    DOUBLE_MIN, DOUBLE_MIN, DOUBLE_MIN);
-  Mesh::Vertex_range::iterator vi = mesh->vertices().begin();
+  Mesh::Vertex_range::const_iterator vi = mesh->vertices().begin();
   bbox = mesh->point(*vi).bbox();
   for (; vi != mesh->vertices().end(); ++vi) {
     bbox = bbox + mesh->point(*vi).bbox();
@@ -2873,13 +2859,13 @@ void Scene::normalize(FT radius, Mesh *mesh) const {
   FT z_radius = (bbox.zmax() - bbox.zmin()) / 2.0;
   FT max_radius = std::max(std::max(x_radius, y_radius), z_radius);
   // step 3: transfer
-  for (Mesh::Vertex_range::iterator vi = mesh->vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh->vertices().begin();
     vi != mesh->vertices().end(); ++vi) {
     Point &p = mesh->point(*vi);
     p = Point(p.x() - x_center, p.y() - y_center, p.z() - z_center);
   }
   // step 4: scale
-  for (Mesh::Vertex_range::iterator vi = mesh->vertices().begin();
+  for (Mesh::Vertex_range::const_iterator vi = mesh->vertices().begin();
     vi != mesh->vertices().end(); ++vi) {
     Point &p = mesh->point(*vi);
     p = Point(p.x() * radius / max_radius,
