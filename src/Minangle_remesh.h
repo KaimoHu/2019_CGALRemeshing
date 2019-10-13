@@ -19,9 +19,10 @@
 //
 // Author(s)     : Kaimo Hu
 
-#ifndef CGAL_MINANGLE_REMESH_H
-#define CGAL_MINANGLE_REMESH_H
+#ifndef SRC_MINANGLE_REMESH_H_
+#define SRC_MINANGLE_REMESH_H_
 
+#include <string>
 #include "internal\minangle_remeshing\minangle_remesh_impl.h"
 
 namespace CGAL {
@@ -29,7 +30,7 @@ namespace Polygon_mesh_processing {
 
 template<class Kernel>
 class Minangle_remesh {
-public:
+ public:
   // typedef typenames
   typedef typename internal::Minangle_remesher<Kernel> Minangle_remesher;
   typedef typename Minangle_remesher::FT FT;
@@ -141,11 +142,11 @@ public:
   }
 
   // public functions
-  void set_input(Mesh &input, bool verbose_progress) const {
+  void set_input(Mesh *input, bool verbose_progress) const {
     remesher_->set_input(input, verbose_progress);
   }
 
-  void set_remesh(Mesh &remesh, bool verbose_progress) const {
+  void set_remesh(Mesh *remesh, bool verbose_progress) const {
     remesher_->set_remesh(remesh, verbose_progress);
   }
 
@@ -158,7 +159,7 @@ public:
   void delete_remesh() const { remesher_->delete_remesh(); }
 
   void generate_samples_and_links() const {
-    remesher_->generate_samples_and_links(); 
+    remesher_->generate_samples_and_links();
   }
 
   void minangle_remeshing() const {
@@ -186,11 +187,11 @@ public:
 
   const Minangle_remesher* get_remesher() const { return remesher_; }
 
-private:
+ private:
   Minangle_remesher *remesher_;
 };
 
-}
-}
+}   // namespace Polygon_mesh_processing
+}   // namespace CGAL
 
-#endif // CGAL_MINANGLE_REMESH_H
+#endif  // SRC_MINANGLE_REMESH_H_

@@ -19,9 +19,17 @@
 //
 // Author(s)     : Kaimo Hu
 
-#ifndef CGAL_MINANGLE_REMESH_IMPL_H
-#define CGAL_MINANGLE_REMESH_IMPL_H
+#ifndef SRC_INTERNAL_MINANGLE_REMESHING_MINANGLE_REMESH_IMPL_H_
+#define SRC_INTERNAL_MINANGLE_REMESHING_MINANGLE_REMESH_IMPL_H_
 
+// C/C++
+#include <list>
+#include <set>
+#include <map>
+#include <string>
+#include <algorithm>
+#include <utility>
+// local
 #include "mesh_properties.h"
 
 namespace CGAL {
@@ -30,10 +38,10 @@ namespace internal {
 
 template<typename Kernel>
 class Minangle_remesher {
-public:
+ public:
   // type definitions
   // types
-  typedef typename Mesh_properties<Kernel> Mesh_properties;        
+  typedef typename Mesh_properties<Kernel> Mesh_properties;
   typedef typename Mesh_properties::FT FT;
   typedef typename Mesh_properties::Vector Vector;
   typedef typename Mesh_properties::Normal Normal;
@@ -43,12 +51,12 @@ public:
   typedef typename Mesh_properties::Bbox Bbox;
   typedef typename Mesh_properties::Mesh Mesh;
   // descriptors
-  typedef typename Mesh_properties::halfedge_descriptor halfedge_descriptor;  
+  typedef typename Mesh_properties::halfedge_descriptor halfedge_descriptor;
   typedef typename Mesh_properties::edge_descriptor edge_descriptor;
   typedef typename Mesh_properties::vertex_descriptor vertex_descriptor;
   typedef typename Mesh_properties::face_descriptor face_descriptor;
   // element list
-  typedef typename Mesh_properties::Halfedge_list Halfedge_list;              
+  typedef typename Mesh_properties::Halfedge_list Halfedge_list;
   typedef typename Mesh_properties::Halfedge_iter Halfedge_iter;
   typedef typename Mesh_properties::Halfedge_const_iter Halfedge_const_iter;
   typedef typename Mesh_properties::Edge_list Edge_list;
@@ -61,18 +69,20 @@ public:
   typedef typename Mesh_properties::Face_iter Face_iter;
   typedef typename Mesh_properties::Face_const_iter Face_const_iter;
   // sample links
-  typedef typename Mesh_properties::Link Link;                                
+  typedef typename Mesh_properties::Link Link;
   typedef typename Mesh_properties::Link_list Link_list;
   typedef typename Mesh_properties::Link_list_iter Link_list_iter;
   typedef typename Mesh_properties::Link_list_const_iter Link_list_const_iter;
   typedef typename Mesh_properties::Link_iter_list Link_iter_list;
   typedef typename Mesh_properties::Link_iter_list_iter Link_iter_list_iter;
-  typedef typename Mesh_properties::Link_iter_list_const_iter Link_iter_list_const_iter;
+  typedef typename Mesh_properties::Link_iter_list_const_iter
+                                    Link_iter_list_const_iter;
   typedef typename Mesh_properties::Link_pointer_list Link_pointer_list;
   typedef typename Mesh_properties::Link_pointer_iter Link_pointer_iter;
-  typedef typename Mesh_properties::Link_pointer_const_iter Link_pointer_const_iter;
+  typedef typename Mesh_properties::Link_pointer_const_iter
+                                    Link_pointer_const_iter;
   // Point list
-  typedef typename Mesh_properties::Point_list Point_list;                    
+  typedef typename Mesh_properties::Point_list Point_list;
   typedef typename Mesh_properties::Point_iter Point_iter;
   typedef typename Mesh_properties::Point_const_iter Point_const_iter;
   // Color list
@@ -82,9 +92,11 @@ public:
   // AABB tree
   typedef typename Mesh_properties::Face_tree Face_tree;
   // Dynamic priority queues
-  typedef typename Mesh_properties::DPQueue_halfedge_long DPQueue_halfedge_long;
+  typedef typename Mesh_properties::DPQueue_halfedge_long
+                                    DPQueue_halfedge_long;
   typedef typename Mesh_properties::Halfedge_long Halfedge_long;
-  typedef typename Mesh_properties::DPQueue_halfedge_short DPQueue_halfedge_short;
+  typedef typename Mesh_properties::DPQueue_halfedge_short
+                                    DPQueue_halfedge_short;
   typedef typename Mesh_properties::Halfedge_short Halfedge_short;
   typedef typename Mesh_properties::DPQueue_vertex_long DPQueue_vertex_long;
   typedef typename Mesh_properties::Vertex_long Vertex_long;
@@ -95,10 +107,10 @@ public:
   typedef typename Mesh_properties::DPQueue_face_short DPQueue_face_short;
   typedef typename Mesh_properties::Face_short Face_short;
   // Visit list and iterator
-  typedef typename std::list<std::pair<Point, FT>> Visit_list;  
+  typedef typename std::list<std::pair<Point, FT>> Visit_list;
   typedef typename std::list<std::pair<Point, FT>>::iterator Visit_iter;
 
-public:
+ public:
   // 1) life cycles
   Minangle_remesher() {
     // general paramters
@@ -154,7 +166,7 @@ public:
     input_aabb_tree_constructed_ = false;
   }
 
-  Minangle_remesher(const NamedParameters &np) {
+  explicit Minangle_remesher(const NamedParameters &np) {
     np_ = np;
 
     input_ = NULL;
@@ -188,16 +200,26 @@ public:
   void set_smooth_angle_delta(FT value) { np_.smooth_angle_delta = value; }
   bool get_apply_edge_flip() const { return np_.apply_edge_flip; }
   void set_apply_edge_flip(bool value) { np_.apply_edge_flip = value; }
-  EdgeFlipStrategy get_edge_flip_strategy() const { return np_.edge_flip_strategy; }
-  void set_edge_flip_strategy(EdgeFlipStrategy value) { np_.edge_flip_strategy = value; }
-  bool get_flip_after_split_and_collapse() const { return np_.flip_after_split_and_collapse; }
-  void set_flip_after_split_and_collapse(bool value) { np_.flip_after_split_and_collapse = value; }
-  bool get_relocate_after_local_operations() const { return np_.relocate_after_local_operations; }
-  void set_relocate_after_local_operations(bool value) { np_.relocate_after_local_operations = value; }
-  RelocateStrategy get_relocate_strategy() const { return np_.relocate_strategy; }
-  void set_relocate_strategy(RelocateStrategy value) { np_.relocate_strategy = value; }
-  bool get_keep_vertex_in_one_ring() const { return np_.keep_vertex_in_one_ring; }
-  void set_keep_vertex_in_one_ring(bool value) { np_.keep_vertex_in_one_ring = value; }
+  EdgeFlipStrategy get_edge_flip_strategy() const
+      { return np_.edge_flip_strategy; }
+  void set_edge_flip_strategy(EdgeFlipStrategy value)
+      { np_.edge_flip_strategy = value; }
+  bool get_flip_after_split_and_collapse() const
+      { return np_.flip_after_split_and_collapse; }
+  void set_flip_after_split_and_collapse(bool value)
+      { np_.flip_after_split_and_collapse = value; }
+  bool get_relocate_after_local_operations() const
+      { return np_.relocate_after_local_operations; }
+  void set_relocate_after_local_operations(bool value)
+      { np_.relocate_after_local_operations = value; }
+  RelocateStrategy get_relocate_strategy() const
+      { return np_.relocate_strategy; }
+  void set_relocate_strategy(RelocateStrategy value)
+      { np_.relocate_strategy = value; }
+  bool get_keep_vertex_in_one_ring() const
+      { return np_.keep_vertex_in_one_ring; }
+  void set_keep_vertex_in_one_ring(bool value)
+      { np_.keep_vertex_in_one_ring = value; }
   bool get_use_local_aabb_tree() const { return np_.use_local_aabb_tree; }
   void set_use_local_aabb_tree(bool value) { np_.use_local_aabb_tree = value; }
   int get_collapsed_list_size() const { return np_.collapsed_list_size; }
@@ -206,27 +228,40 @@ public:
   void set_decrease_max_errors(bool value) { np_.decrease_max_errors = value; }
   bool get_verbose_progress() const { return np_.verbose_progress; }
   void set_verbose_progress(bool value) { np_.verbose_progress = value; }
-  bool get_apply_initial_mesh_simplification() const { return np_.apply_initial_mesh_simplification; }
-  void set_apply_initial_mesh_simplification(bool value) { np_.apply_initial_mesh_simplification = value; }
-  bool get_apply_final_vertex_relocation() const { return np_.apply_final_vertex_relocation; }
-  void set_apply_final_vertex_relocation(bool value) { np_.apply_final_vertex_relocation = value; }
+  bool get_apply_initial_mesh_simplification() const
+      { return np_.apply_initial_mesh_simplification; }
+  void set_apply_initial_mesh_simplification(bool value)
+      { np_.apply_initial_mesh_simplification = value; }
+  bool get_apply_final_vertex_relocation() const
+      { return np_.apply_final_vertex_relocation; }
+  void set_apply_final_vertex_relocation(bool value)
+      { np_.apply_final_vertex_relocation = value; }
   // 2.2) sample parameters
   int get_samples_per_face_in() const { return np_.samples_per_face_in; }
   void set_samples_per_face_in(int value) { np_.samples_per_face_in = value; }
   int get_samples_per_face_out() const { return np_.samples_per_face_out; }
-  void set_samples_per_face_out(int value) { np_.samples_per_face_out = value; }
+  void set_samples_per_face_out(int value)
+      { np_.samples_per_face_out = value; }
   int get_max_samples_per_area() const { return np_.max_samples_per_area; }
-  void set_max_samples_per_area(int value) { np_.max_samples_per_area = value; }
-  int get_min_samples_per_triangle() const { return np_.min_samples_per_triangle; }
-  void set_min_samples_per_triangle(int value) { np_.min_samples_per_triangle = value; }
+  void set_max_samples_per_area(int value)
+      { np_.max_samples_per_area = value; }
+  int get_min_samples_per_triangle() const
+      { return np_.min_samples_per_triangle; }
+  void set_min_samples_per_triangle(int value)
+      { np_.min_samples_per_triangle = value; }
   int get_bvd_iteration_count() const { return np_.bvd_iteration_count; }
   void set_bvd_iteration_count(int value) { np_.bvd_iteration_count = value; }
-  SampleNumberStrategy get_sample_number_strategy() const { return np_.sample_number_strategy; }
-  void set_sample_number_strategy(SampleNumberStrategy value) { np_.sample_number_strategy = value; }
+  SampleNumberStrategy get_sample_number_strategy() const
+      { return np_.sample_number_strategy; }
+  void set_sample_number_strategy(SampleNumberStrategy value)
+      { np_.sample_number_strategy = value; }
   SampleStrategy get_sample_strategy() const { return np_.sample_strategy; }
-  void set_sample_strategy(SampleStrategy value) { np_.sample_strategy = value; }
-  bool get_use_stratified_sampling() const { return np_.use_stratified_sampling; }
-  void set_use_stratified_sampling(bool value) { np_.use_stratified_sampling = value; }
+  void set_sample_strategy(SampleStrategy value)
+      { np_.sample_strategy = value; }
+  bool get_use_stratified_sampling() const
+      { return np_.use_stratified_sampling; }
+  void set_use_stratified_sampling(bool value)
+      { np_.use_stratified_sampling = value; }
   // 2.3) feature intensity parameters
   FT get_sum_theta() const { return np_.sum_theta; }
   void set_sum_theta(FT value) { np_.sum_theta = value; }
@@ -236,37 +271,54 @@ public:
   void set_dihedral_theta(FT value) { np_.dihedral_theta = value; }
   FT get_dihedral_delta() const { return np_.dihedral_delta; }
   void set_dihedral_delta(FT value) { np_.dihedral_delta = value; }
-  FT get_feature_difference_delta() const { return np_.feature_difference_delta; }
-  void set_feature_difference_delta(FT value) { np_.feature_difference_delta = value; }
+  FT get_feature_difference_delta() const
+      { return np_.feature_difference_delta; }
+  void set_feature_difference_delta(FT value)
+      { np_.feature_difference_delta = value; }
   FT get_feature_control_delta() const { return np_.feature_control_delta; }
-  void set_feature_control_delta(FT value) { np_.feature_control_delta = value; }
+  void set_feature_control_delta(FT value)
+      { np_.feature_control_delta = value; }
   bool get_inherit_element_types() const { return np_.inherit_element_types; }
-  void set_inherit_element_types(bool value) { np_.inherit_element_types = value; }
-  bool get_use_feature_intensity_weights() const { return np_.use_feature_intensity_weights; }
-  void set_use_feature_intensity_weights(bool value) { np_.use_feature_intensity_weights = value; }
+  void set_inherit_element_types(bool value)
+      { np_.inherit_element_types = value; }
+  bool get_use_feature_intensity_weights() const
+      { return np_.use_feature_intensity_weights; }
+  void set_use_feature_intensity_weights(bool value)
+      { np_.use_feature_intensity_weights = value; }
   // 2.4) vertex optimization parameters
   int get_vertex_optimize_count() const { return np_.vertex_optimize_count; }
-  void set_vertex_optimize_count(int value) { np_.vertex_optimize_count = value; }
+  void set_vertex_optimize_count(int value)
+      { np_.vertex_optimize_count = value; }
   FT get_vertex_optimize_ratio() const { return np_.vertex_optimize_ratio; }
-  void set_vertex_optimize_ratio(FT value) { np_.vertex_optimize_ratio = value; }
+  void set_vertex_optimize_ratio(FT value)
+      { np_.vertex_optimize_ratio = value; }
   int get_stencil_ring_size() const { return np_.stencil_ring_size; }
   void set_stencil_ring_size(int value) { np_.stencil_ring_size = value; }
-  OptimizeStrategy get_optimize_strategy() const{ return np_.optimize_strategy; }
-  void set_optimize_strategy(OptimizeStrategy value) { np_.optimize_strategy = value; }
-  OptimizeType get_face_optimize_type() const { return np_.face_optimize_type; }
-  void set_face_optimize_type(OptimizeType value) { np_.face_optimize_type = value; }
+  OptimizeStrategy get_optimize_strategy() const
+      { return np_.optimize_strategy; }
+  void set_optimize_strategy(OptimizeStrategy value)
+      { np_.optimize_strategy = value; }
+  OptimizeType get_face_optimize_type() const
+      { return np_.face_optimize_type; }
+  void set_face_optimize_type(OptimizeType value)
+      { np_.face_optimize_type = value; }
   OptimizeType get_edge_optimize_type() const { return np_.edge_optimize_type; }
-  void set_edge_optimize_type(OptimizeType value) { np_.edge_optimize_type = value; }
-  OptimizeType get_vertex_optimize_type() const { return np_.vertex_optimize_type; }
-  void set_vertex_optimize_type(OptimizeType value) { np_.vertex_optimize_type = value; }
-  bool get_optimize_after_local_operations() const { return np_.optimize_after_local_operations; }
-  void set_optimize_after_local_operations(bool value) { np_.optimize_after_local_operations = value; }
+  void set_edge_optimize_type(OptimizeType value)
+      { np_.edge_optimize_type = value; }
+  OptimizeType get_vertex_optimize_type() const
+      { return np_.vertex_optimize_type; }
+  void set_vertex_optimize_type(OptimizeType value)
+      { np_.vertex_optimize_type = value; }
+  bool get_optimize_after_local_operations() const
+      { return np_.optimize_after_local_operations; }
+  void set_optimize_after_local_operations(bool value)
+      { np_.optimize_after_local_operations = value; }
 
   // 3) member data access
   Bbox get_input_bbox() const { return input_bbox; }
   const NamedParameters &get_named_parameters() const { return np_; }
   bool get_links_initialized() const { return links_initialized_; }
-  void set_input(Mesh &input, bool verbose_progress) {
+  void set_input(Mesh *input, bool verbose_progress) {
     // step 1: set the input
     delete_input();
     input_ = new Mesh_properties(input);
@@ -280,7 +332,7 @@ public:
   }
   Mesh_properties* get_input() { return input_; }
   const Mesh_properties* get_input() const { return input_; }
-  void set_remesh(Mesh &remesh, bool verbose_progress) {
+  void set_remesh(Mesh *remesh, bool verbose_progress) {
     // step 1: set the remesh
     delete_remesh();
     remesh_ = new Mesh_properties(remesh);
@@ -314,8 +366,7 @@ public:
       extension.begin(), std::tolower);
     if (extension == ".off") {
       save_as_off(file_name);
-    }
-    else {
+    } else {
       std::cout << "Invalid file type" << std::endl;
     }
   }
@@ -518,7 +569,7 @@ public:
     std::cout << std::endl << "Split local longest edge..." << std::endl;
     std::cout << "(max error threshold value = " << max_error_threshold_value
       << ", min angle threshold = " << np_.min_angle_threshold
-      << "бу)" << std::endl;
+      << " degree)" << std::endl;
     face_descriptor fd = remesh_->get_face(min_radian_halfedge);
     halfedge_descriptor longest_hd = remesh_->get_longest_halfedge(fd);
     longest_hd = remesh_->longest_side_propagation(longest_hd);
@@ -527,8 +578,7 @@ public:
       false, NULL, NULL, longest_hd, np_);
     if (vd != remesh_->get_null_vertex()) {
       std::cout << "1 local longest edge splitted" << std::endl;
-    }
-    else {
+    } else {
       std::cout << "Error: no edge splitted" << std::endl;
     }
   }
@@ -557,8 +607,8 @@ public:
     halfedge_descriptor min_radian_halfedge;
     min_radian_halfedge = remesh_->calculate_minimal_radian(&min_radian);
     std::cout << "(min angle threshold = " << np_.min_angle_threshold
-      << "бу, min angle = " << remesh_->to_angle(min_radian)
-      << "бу)" << std::endl;
+      << " degree, min angle = " << remesh_->to_angle(min_radian)
+      << " degree)" << std::endl;
     greedy_improve_angle(max_error_threshold_value, min_radian, true, NULL,
       NULL, min_radian_halfedge);
   }
@@ -574,7 +624,7 @@ public:
     std::cout << std::endl << "Greedy angles improvement..." << std::endl;
     std::cout << "(max error threshold value = " << max_error_threshold_value
       << ", min angle threshold = " << np_.min_angle_threshold
-      << "бу, max mesh complexity = " << np_.max_mesh_complexity
+      << " degree, max mesh complexity = " << np_.max_mesh_complexity
       << ")" << std::endl;
     FT max_error = 0, min_radian = CGAL_PI;
     halfedge_descriptor max_error_halfedge, min_radian_halfedge;
@@ -649,8 +699,7 @@ public:
     min_radian_halfedge = remesh_->get_minimal_radian(&min_radian);
     }
     }
-    }
-    else {
+    } else {
     min_radian_halfedge = remesh_->get_minimal_radian(&min_radian);
     while (remesh_->size_of_vertices() < np_.max_mesh_complexity &&
     min_radian < min_radian_threshold) {
@@ -678,7 +727,7 @@ public:
     std::cout << std::endl << "Final vertex relocation..." << std::endl;
     std::cout << "(max error threshold value = " << max_error_threshold_value
       << ", min angle threshold = " << np_.min_angle_threshold
-      << "бу)..." << std::endl;
+      << " degree)..." << std::endl;
     DPQueue_vertex_short relocate_candidate_queue;
     remesh_->fill_relocate_candidate_vertices(&relocate_candidate_queue);
     unsigned int index = 0, nb_relocate = 0;
@@ -715,7 +764,7 @@ public:
       << timer.time() << " s)" << std::endl;
   }
 
-private:
+ private:
   // 1) normals
   void calculate_normals(bool is_input, bool verbose_progress) const {
     const std::string name = is_input ? "input" : "remesh";
@@ -724,8 +773,7 @@ private:
     }
     if (is_input) {
       input_->calculate_normals();
-    }
-    else {
+    } else {
       remesh_->calculate_normals();
     }
     if (verbose_progress) {
@@ -740,8 +788,7 @@ private:
     if (is_input) {
       std::cout << "Building input face AABB tree...";
       input_->build_face_tree(face_tree);
-    }
-    else {
+    } else {
       std::cout << "Building remesh face AABB tree...";
       remesh_->build_face_tree(face_tree);
     }
@@ -778,13 +825,13 @@ private:
     collapsed_list_.clear();
     collapsed_map_.clear();
   }
-  
+
   // 5) manipulations
   void greedy_improve_angle(FT max_error_threshold_value, FT min_radian,
       bool verbose_progress, DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_radian_queue,
       halfedge_descriptor min_radian_halfedge) {
-    // improve min_radian constrained by max_error_threshold_value in the following:
+    // improve min_radian by the following:
     // 1) If collapse applies, collapse and return;
     // 2) If flip applies, flip and return;
     // 3) If relocate applies, relocate and return;
@@ -805,8 +852,8 @@ private:
     if (!infinite_loop) {
       // step 2: try to flip
       if (np_.apply_edge_flip) {
-        int nb_flip = remesh_->flip_applied(input_face_tree_, 
-            max_error_threshold_value, -1.0, min_radian, false, 
+        int nb_flip = remesh_->flip_applied(input_face_tree_,
+            max_error_threshold_value, -1.0, min_radian, false,
             large_error_queue, small_radian_queue, min_radian_halfedge, np_);
         if (nb_flip > 0) {
           if (verbose_progress) {
@@ -817,7 +864,7 @@ private:
       }
       // step 3: try to relocate
       int nb_relocate = remesh_->relocate_applied(input_face_tree_,
-          max_error_threshold_value, -1.0, min_radian, false, 
+          max_error_threshold_value, -1.0, min_radian, false,
           large_error_queue, small_radian_queue, min_radian_halfedge, np_);
       if (nb_relocate > 0) {
         if (verbose_progress) {
@@ -831,9 +878,9 @@ private:
     halfedge_descriptor longest_hh = remesh_->get_longest_halfedge(fh);
     longest_hh = remesh_->longest_side_propagation(longest_hh);
     if (np_.apply_edge_flip) {
-      halfedge_descriptor hnew = remesh_->flip_edge(input_face_tree_, 
-          max_error_threshold_value, -1.0, min_radian, false, large_error_queue,
-          small_radian_queue, longest_hh, np_);
+      halfedge_descriptor hnew = remesh_->flip_edge(input_face_tree_,
+          max_error_threshold_value, -1.0, min_radian, false,
+          large_error_queue, small_radian_queue, longest_hh, np_);
       if (hnew != remesh_->get_null_halfedge()) {
         if (verbose_progress) {
           std::cout << "1 longest edge flipped" << std::endl;
@@ -858,12 +905,12 @@ private:
     // 1) If flip reduces the max_error, flip and return;
     // 2) If relocate reduces the max_error, relocate and return;
     // 3) Otherwise, split the max_error_halfedge.
-    // 2. if improve_min_radian is true, small_value_queue is the 
+    // 2. if improve_min_radian is true, small_value_queue is the
     //    small_radian_queue; otherwise, it is the collapse_candidate_queue.
     // step 1: try to flip
     if (np_.apply_edge_flip && remesh_->flip_edge(input_face_tree_, -1.0,
-        max_error, -1.0, reduce_complexity, large_error_queue, 
-        small_value_queue, max_error_halfedge, np_) != 
+        max_error, -1.0, reduce_complexity, large_error_queue,
+        small_value_queue, max_error_halfedge, np_) !=
         remesh_->get_null_halfedge()) {
       if (verbose_progress) {
         std::cout << "1 edge flipped" << std::endl;
@@ -881,7 +928,7 @@ private:
       return;
     }
     // step 3: try to split
-    remesh_->split_edge(input_face_tree_, -1.0, max_error, -1.0, 
+    remesh_->split_edge(input_face_tree_, -1.0, max_error, -1.0,
         reduce_complexity, large_error_queue, small_value_queue,
         max_error_halfedge, np_);
     if (verbose_progress) {
@@ -909,12 +956,11 @@ private:
         std::cout << "Point(" << point << ") with length "
           << sl << ": collapse denied.";
       }
-      //option: we may delete it instead of splicing front
+      // option: we may delete it instead of splicing front
       collapsed_list_.splice(collapsed_list_.begin(),
         collapsed_list_, it2);
       return true;
-    }
-    else {
+    } else {
       collapsed_list_.push_front(std::pair<Point, FT>(point, sl));
       collapsed_map_[point][sl] = collapsed_list_.begin();
       while (collapsed_list_.size() > np_.collapsed_list_size) {
@@ -935,7 +981,7 @@ private:
 
   // 6) collapse
   vertex_descriptor collapse_applied(FT max_error_threshold_value,
-      FT min_radian, bool reduce_complexity, bool *infinite_loop, 
+      FT min_radian, bool reduce_complexity, bool *infinite_loop,
       DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd) {
     /* if min_radian > 0, we improve min_radian;
@@ -957,18 +1003,18 @@ private:
     // step 3: backup the original local links
     std::set<face_descriptor> one_ring_faces, extended_faces;
     remesh_->collect_one_ring_faces_incident_to_edge(hd, &one_ring_faces);
-    remesh_->extend_faces(one_ring_faces, np_.stencil_ring_size, 
+    remesh_->extend_faces(one_ring_faces, np_.stencil_ring_size,
                           &extended_faces);
     Link_iter_list face_in_links, edge_in_links;
     Link_pointer_list vertex_in_links;
     Point_list face_in_end_points, edge_in_end_points, vertex_in_end_points;
-    remesh_->backup_local_in_links(extended_faces, &face_in_links, 
+    remesh_->backup_local_in_links(extended_faces, &face_in_links,
         &face_in_end_points, &edge_in_links, &edge_in_end_points,
         &vertex_in_links, &vertex_in_end_points);
     // step 4: simulate the edge collapse
     FT error = DOUBLE_MAX, radian = 0.0;
     simulate_edge_collapse(one_ring_faces, extended_faces, halfedges, hd,
-        is_ring, face_in_links, edge_in_links, vertex_in_links, &error, 
+        is_ring, face_in_links, edge_in_links, vertex_in_links, &error,
         &radian, &new_point);
     remesh_->restore_local_in_links(face_in_end_points, face_in_links,
         edge_in_end_points, edge_in_links, vertex_in_end_points,
@@ -997,7 +1043,7 @@ private:
   }
 
   void simulate_edge_collapse(const std::set<face_descriptor> &one_ring_faces,
-      const std::set<face_descriptor> &extended_faces, 
+      const std::set<face_descriptor> &extended_faces,
       const Halfedge_list &halfedges, halfedge_descriptor hh, bool is_ring,
       const Link_iter_list &face_in_links, const Link_iter_list &edge_in_links,
       const Link_pointer_list &vertex_in_links, FT *error, FT *radian,
@@ -1006,7 +1052,7 @@ private:
     Mesh local_mesh;
     vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
         extended_faces, halfedges, *new_point, is_ring, &local_mesh);
-    Mesh_properties local_mp(local_mesh);
+    Mesh_properties local_mp(&local_mesh);
     local_mp.calculate_feature_intensities(np_);
     // step 2: get the in_link_faces (for function compatability)
     std::set<face_descriptor> in_link_faces;
@@ -1033,7 +1079,7 @@ private:
     return temp_value / precison;
   }
 
-private:
+ private:
   // 1) parameters
   NamedParameters np_;
 
@@ -1054,8 +1100,8 @@ private:
   int const INITIAL_BVD_COUNT = 5;
 };
 
-}
-}
-}
+}  // namespace internal
+}  // namespace Polygon_mesh_processing
+}  // namespace CGAL
 
-#endif // CGAL_MINANGLE_REMESH_IMPL_H
+#endif  // SRC_INTERNAL_MINANGLE_REMESHING_MINANGLE_REMESH_IMPL_H_
