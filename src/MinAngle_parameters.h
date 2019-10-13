@@ -20,7 +20,7 @@ class MinAngleParameters : public QDialog, private Ui_MinAngleParametersDialog {
     sample_strategy_types.append("Adaptive");
     cb_sample_strategy->addItems(sample_strategy_types);
     cb_sample_strategy->setCurrentIndex(1);
-    // fill the items in cb_facet_relocate_type, 
+    // fill the items in cb_face_relocate_type, 
     //                   cb_edge_relocate_type,
     //                   cb_vertex_relocate_type
     QStringList optimize_types;
@@ -28,8 +28,8 @@ class MinAngleParameters : public QDialog, private Ui_MinAngleParametersDialog {
     optimize_types.append("Input to Remesh");
     optimize_types.append("Remesh to Input");
     optimize_types.append("Both");
-    cb_facet_optimize_type->addItems(optimize_types);
-    cb_facet_optimize_type->setCurrentIndex(3);
+    cb_face_optimize_type->addItems(optimize_types);
+    cb_face_optimize_type->setCurrentIndex(3);
     cb_edge_optimize_type->addItems(optimize_types);
     cb_edge_optimize_type->setCurrentIndex(3);
     cb_vertex_optimize_type->addItems(optimize_types);
@@ -112,11 +112,11 @@ class MinAngleParameters : public QDialog, private Ui_MinAngleParametersDialog {
   void set_apply_final_vertex_relocation(bool value) { cb_apply_final_vertex_relocation->setChecked(value); }
 
   // 2) sample parameters
-  int get_samples_per_facet_in() const { return sb_samples_per_facet_in->value(); }
-  void set_samples_per_facet_in(int value) { sb_samples_per_facet_in->setValue(value); }
+  int get_samples_per_face_in() const { return sb_samples_per_face_in->value(); }
+  void set_samples_per_face_in(int value) { sb_samples_per_face_in->setValue(value); }
 
-  int get_samples_per_facet_out() const { return sb_samples_per_facet_out->value(); }
-  void set_samples_per_facet_out(int value) { sb_samples_per_facet_out->setValue(value); }
+  int get_samples_per_face_out() const { return sb_samples_per_face_out->value(); }
+  void set_samples_per_face_out(int value) { sb_samples_per_face_out->setValue(value); }
 
   int get_max_samples_per_area() const { return sb_max_samples_per_area->value(); }
   void set_max_samples_per_area(int value) { sb_max_samples_per_area->setValue(value); }
@@ -174,8 +174,8 @@ class MinAngleParameters : public QDialog, private Ui_MinAngleParametersDialog {
   int get_optimize_strategy() const { return cb_optimize_strategy->currentIndex(); }
   void set_optimize_strategy(int value) { cb_optimize_strategy->setCurrentIndex(value); }
 
-  int get_facet_optimize_type() const { return cb_facet_optimize_type->currentIndex(); }
-  void set_facet_optimize_type(int value) { cb_facet_optimize_type->setCurrentIndex(value); }
+  int get_face_optimize_type() const { return cb_face_optimize_type->currentIndex(); }
+  void set_face_optimize_type(int value) { cb_face_optimize_type->setCurrentIndex(value); }
 
   int get_edge_optimize_type() const { return cb_edge_optimize_type->currentIndex(); }
   void set_edge_optimize_type(int value) { cb_edge_optimize_type->setCurrentIndex(value); }

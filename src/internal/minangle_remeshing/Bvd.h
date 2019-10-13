@@ -4,17 +4,11 @@
 #undef min
 #undef max
 
-// STL
-#include <list>
-#include <vector> 
 // CGAL
-#include <CGAL/basic.h>
 #include <CGAL/Delaunay_triangulation_2.h>
-#include <CGAL/intersections.h> 
 #include <CGAL/Polygon_2.h>
 // local
 #include "Polygon_kernel.h"
-#include "console_color.h"
 
 template <class Kernel, class TDS>
 class CBvd : public CGAL::Delaunay_triangulation_2<Kernel, TDS> {
@@ -100,10 +94,9 @@ public:
     // step 2: compute the voronoi cells and boundaries
     CGAL::Color color;
     for (Finite_vertices_iterator v = Dt::finite_vertices_begin();
-      v != Dt::finite_vertices_end(); ++v) {
+        v != Dt::finite_vertices_end(); ++v) {
       const Point_2 &q = v->point();
       color = point_color_map[q];
-      //::glColor3ub(color.r(), color.g(), color.b());
       compute_bounded_cell_and_boundaries(v, normal, color,
         pos_faces, pos_face_normals, pos_face_colors, pos_boundaries);
     }
