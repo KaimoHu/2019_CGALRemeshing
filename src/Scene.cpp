@@ -2218,11 +2218,11 @@ bool Scene::open(QString file_name) {
   }
   in.close();
   normalize(1.0, m_pInput);
-  m_minangle_remesh.set_input(*m_pInput, true);
+  m_minangle_remesh.set_input(m_pInput, true);
   m_target_edge_length = calculate_input_edge_length();
   update_bbox();
   m_pRemesh = new Mesh(*m_pInput);
-  m_minangle_remesh.set_remesh(*m_pRemesh, false);
+  m_minangle_remesh.set_remesh(m_pRemesh, false);
   reset_draw_render_types();
   m_view_input = false;
   m_view_remesh = true;
@@ -2257,12 +2257,12 @@ bool Scene::open_input(QString file_name) {
   }
   in.close();
   normalize(1.0, m_pInput);
-  m_minangle_remesh.set_input(*m_pInput, true);
+  m_minangle_remesh.set_input(m_pInput, true);
   m_target_edge_length = calculate_input_edge_length();
   update_bbox();
   if (m_pRemesh == NULL) {
     m_pRemesh = new Mesh(*m_pInput);
-    m_minangle_remesh.set_remesh(*m_pRemesh, false);
+    m_minangle_remesh.set_remesh(m_pRemesh, false);
   }
   reset_draw_render_types();
   m_view_input = true;
@@ -2301,11 +2301,11 @@ bool Scene::open_remesh(QString file_name) {
   if (m_pInput == NULL) {
     normalize(1.0, m_pRemesh);
     m_pInput = new Mesh(*m_pRemesh);
-    m_minangle_remesh.set_input(*m_pInput, false);
+    m_minangle_remesh.set_input(m_pInput, false);
     m_target_edge_length = calculate_input_edge_length();
     update_bbox();
   }
-  m_minangle_remesh.set_remesh(*m_pRemesh, true);
+  m_minangle_remesh.set_remesh(m_pRemesh, true);
   reset_draw_render_types();
   m_view_input = false;
   m_view_remesh = true;
@@ -2628,7 +2628,7 @@ void Scene::eliminate_degenerations() {
   std::cout << "Done (" << nb_eliminations << " faces eliminated, "
     << timer.time() << " s)" << std::endl;
   if (nb_eliminations > 0) {
-    m_minangle_remesh.set_input(*m_pInput, false);
+    m_minangle_remesh.set_input(m_pInput, false);
     m_target_edge_length = calculate_input_edge_length();
     reset();
     reset_draw_render_types();
@@ -2649,7 +2649,7 @@ void Scene::split_input_long_edges() {
   std::cout << "Done (" << nb_split << " edges splited, "
     << timer.time() << " s)" << std::endl;
   if (nb_split > 0) {
-    m_minangle_remesh.set_input(*m_pInput, false);
+    m_minangle_remesh.set_input(m_pInput, false);
     m_target_edge_length = calculate_input_edge_length();
     reset();    // do we not need clear links because m_pRemesh is reset
     reset_draw_render_types();
@@ -2680,7 +2680,7 @@ void Scene::split_borders() {
         *m_pRemesh,
         boost::make_function_output_iterator(halfedge2edge(*m_pRemesh, border)));
     PMP::split_long_edges(border, m_target_edge_length, *m_pRemesh);
-    m_minangle_remesh.set_remesh(*m_pRemesh, false);
+    m_minangle_remesh.set_remesh(m_pRemesh, false);
     std::cout << "Done (" << timer.time() << " s)" << std::endl;
     reset_draw_render_types();
     changed();
@@ -2702,7 +2702,7 @@ void Scene::isotropic_remeshing() {
         PMP::parameters::number_of_iterations(m_smooth_iteration_count)
         .protect_constraints(true)//i.e. protect border, here
       );
-    m_minangle_remesh.set_remesh(*m_pRemesh, false);
+    m_minangle_remesh.set_remesh(m_pRemesh, false);
     std::cout << "Done (" << timer.time() << " s)" << std::endl;
     reset_draw_render_types();
     changed();
@@ -2837,7 +2837,7 @@ void Scene::reset() {
       delete m_pRemesh;
     }
     m_pRemesh = new Mesh(*m_pInput);
-    m_minangle_remesh.set_remesh(*m_pRemesh, false);
+    m_minangle_remesh.set_remesh(m_pRemesh, false);
   }
 }
 
