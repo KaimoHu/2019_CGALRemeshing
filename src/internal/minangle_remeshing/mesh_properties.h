@@ -339,6 +339,8 @@ class Mesh_properties {
       { return mesh_.face(hd); }
   inline halfedge_descriptor get_opposite(halfedge_descriptor hd) const
       { return mesh_.opposite(hd); }
+  inline edge_descriptor get_edge(halfedge_descriptor hd) const
+    { return mesh_.edge(hd); }
   inline Point& get_point(vertex_descriptor vd) { return mesh_.point(vd); }
   inline const Point& get_point(vertex_descriptor vd) const
       { return mesh_.point(vd); }
@@ -1267,7 +1269,7 @@ class Mesh_properties {
     bool reduce_complexity, DPQueue_halfedge_long *large_error_queue,
     DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd,
     const NamedParameters &np) {
-    // max_error > 0 means we want to reduce error; othewiese improve radian
+    // max_error > 0 means to reduce error; othewiese improve radian
     // step 1: backup the original in_links and the edge types
     std::set<face_descriptor> one_ring_faces, extended_faces;
     one_ring_faces.insert(get_face(hd));
@@ -1318,7 +1320,7 @@ class Mesh_properties {
     collect_one_ring_faces_incident_to_vertex(vd, &one_ring_faces);
     extend_faces(one_ring_faces, np.stencil_ring_size, &extended_faces);
     generate_local_links(input_face_tree, false, face_in_links, edge_in_links,
-      vertex_in_links, vd, extended_faces, np);
+                         vertex_in_links, vd, extended_faces, np);
     if (max_error > 0 || np.optimize_after_local_operations) {
       // if reduce error, we definitely optimize; otherweise it depends
       optimize_vertex_position(input_face_tree, face_in_links,
@@ -2481,7 +2483,7 @@ class Mesh_properties {
 
   FT calculate_normal_dihedral(halfedge_descriptor hd) const {
     // get the dihedral of the normals between the two incident faces
-    CGAL_precondition(!is_border(get_edge(hd)));
+    CGAL_precondition(!is_border(hd) && !is_border(get_opposite(hd)));
     face_descriptor fd1 = get_face(hd);
     face_descriptor fd2 = get_face(get_opposite(hd));
     const Normal &n1 = get_face_normal(fd1);
@@ -3478,7 +3480,7 @@ class Mesh_properties {
   }
 
   bool edge_flip_would_improve_radian(halfedge_descriptor hd) const {
-    CGAL_precondition(!is_border(get_edge(hd)));
+    CGAL_precondition(!is_border(hd) && !is_border(get_opposite(hd)));
     const Point &p = get_point(get_source_vertex(hd));
     const Point &q = get_point(get_target_vertex(hd));
     const Point &s = get_point(get_opposite_vertex(hd));

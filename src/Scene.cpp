@@ -1341,14 +1341,14 @@ void Scene::compute_all_voronois(bool is_input, FT sum_theta_value,
     const Normal &normal = mesh_properties->get_face_normal(*fi);
     Point_list samples;
     Color_list colors;
-    get_all_sample_normalized_colors(mesh_properties, *fi,
-        min_value, max_value, 240, &samples, &colors);
+    get_all_sample_normalized_colors(is_input, *fi, min_value, max_value,
+                                     240, &samples, &colors);
     Bvd bvd(mesh_properties->triangle(*fi));
     bvd.compute_voronoi_cells_and_boundaries(samples, normal, colors,
       pos_faces, pos_face_normals, pos_face_colors, pos_boundaries);
   }
   // step 3: compute all samples
-  compute_all_samples(mesh_properties, pos_samples);
+  compute_all_samples(is_input, pos_samples);
 }
 
 void Scene::compute_vertex_voronois(bool is_input, FT sum_theta_value, 
@@ -1388,11 +1388,11 @@ void Scene::compute_vertex_voronois(bool is_input, FT sum_theta_value,
   for (Mesh::Vertex_range::const_iterator vi = mesh.vertices().begin();
     vi != mesh.vertices().end(); ++vi) {
     if (m_render_type == RenderType::k_classifications) {
-      color = get_vertex_classification_color(mesh_properties, *vi);
+      color = get_vertex_classification_color(is_input, *vi);
     }
     else {
-      color = get_vertex_sample_normalized_color(mesh_properties, *vi,
-                                                 min_value, max_value, 240);
+      color = get_vertex_sample_normalized_color(is_input, *vi, min_value,
+                                                 max_value, 240);
     }
     const Point &p = mesh.point(*vi);
     Halfedge_around_target_circulator hb(mesh.halfedge(*vi), mesh), he(hb);
@@ -1416,7 +1416,7 @@ void Scene::compute_vertex_voronois(bool is_input, FT sum_theta_value,
     } while (hb != he);
   }
   // step 3: compute vertices
-  compute_vertices(mesh_properties, pos_samples);
+  compute_vertices(is_input, pos_samples);
 }
 
 void Scene::compute_edge_voronois(bool is_input, FT sum_theta_value,
@@ -1467,14 +1467,14 @@ void Scene::compute_face_voronois(bool is_input, FT sum_theta_value,
     const Normal &normal = mesh_properties->get_face_normal(*fi);
     Point_list samples;
     Color_list colors;
-    get_face_sample_normalized_colors(mesh_properties, *fi, min_value, 
+    get_face_sample_normalized_colors(is_input, *fi, min_value, 
                                       max_value, 240, &samples, &colors);
     Bvd bvd(mesh_properties->triangle(*fi));
     bvd.compute_voronoi_cells_and_boundaries(samples, normal, colors,
       pos_faces, pos_face_normals, pos_face_colors, pos_boundaries);
   }
   // step 3: compute samples
-  compute_face_samples(mesh_properties, pos_samples);
+  compute_face_samples(is_input, pos_samples);
 }
 
 void Scene::compute_edge_normal_dihedrals(bool is_input,
@@ -1576,7 +1576,7 @@ void Scene::compute_edge_sample_properties(bool is_input, FT sum_theta_value,
     }
     points.push_back(mesh.point(mesh.target(hd)));
     Color_list colors;
-    get_edge_sample_normalized_colors(mesh_properties, hd, min_value, 
+    get_edge_sample_normalized_colors(is_input, hd, min_value, 
                                       max_value, 240, &colors);
     face_descriptor fd = mesh.face(hd);        // first triangle
     Point c = mesh_properties->centroid(fd);
@@ -1642,7 +1642,7 @@ void Scene::compute_all_samples(bool is_input,
   const Mesh_properties *mesh_properties = get_mesh_properties(is_input);
   const Mesh &mesh = mesh_properties->get_mesh();
   // step 1: face out samples
-  compute_face_samples(mesh_properties, pos_samples);
+  compute_face_samples(is_input, pos_samples);
   // step 2: edge out samples
   for (Mesh::Edge_range::const_iterator ei = mesh.edges().begin();
     ei != mesh.edges().end(); ++ei) {
