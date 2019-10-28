@@ -322,7 +322,7 @@ void MainWindow::on_actionMinAngle_parameter_settings_triggered() {
   ps.set_use_local_aabb_tree(m_pScene->get_use_local_aabb_tree());
   ps.set_collapsed_list_size(m_pScene->get_collapsed_list_size());
   ps.set_decrease_max_errors(m_pScene->get_decrease_max_errors());
-  ps.set_track_information(m_pScene->get_track_information());
+  ps.set_verbose_progress(m_pScene->get_verbose_progress());
   ps.set_apply_initial_mesh_simplification(
     m_pScene->get_apply_initial_mesh_simplification());
   ps.set_apply_final_vertex_relocation(
@@ -389,7 +389,7 @@ void MainWindow::on_actionMinAngle_parameter_settings_triggered() {
     m_pScene->set_use_local_aabb_tree(ps.get_use_local_aabb_tree());
     m_pScene->set_collapsed_list_size(ps.get_collapsed_list_size());
     m_pScene->set_decrease_max_errors(ps.get_decrease_max_errors());
-    m_pScene->set_track_information(ps.get_track_information());
+    m_pScene->set_verbose_progress(ps.get_verbose_progress());
     m_pScene->set_apply_initial_mesh_simplification(
       ps.get_apply_initial_mesh_simplification());
     m_pScene->set_apply_final_vertex_relocation(

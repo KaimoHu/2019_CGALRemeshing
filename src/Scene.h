@@ -159,11 +159,11 @@ class Scene : public QObject {
     m_minangle_remesh.get_remesher()->set_decrease_max_errors(value);
   }
 
-  bool get_track_information() const {
+  bool get_verbose_progress() const {
     return m_minangle_remesh.get_remesher()->get_verbose_progress();
   }
 
-  void set_track_information(bool value) {
+  void set_verbose_progress(bool value) {
     m_minangle_remesh.get_remesher()->set_verbose_progress(value);
   }
 

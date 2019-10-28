@@ -365,7 +365,7 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QCheckBox" name="cb_track_information">
+   <widget class="QCheckBox" name="cb_verbose_progress">
     <property name="geometry">
      <rect>
       <x>280</x>
@@ -378,7 +378,7 @@
      <enum>Qt::RightToLeft</enum>
     </property>
     <property name="text">
-     <string>Track information</string>
+     <string>Verbose progress</string>
     </property>
     <property name="checked">
      <bool>true</bool>
