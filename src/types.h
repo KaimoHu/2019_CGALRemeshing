@@ -10,7 +10,7 @@ typedef CGAL::Color Color;
 typedef CGAL::Simple_cartesian<double> Kernel;
 typedef PMP::Minangle_remesh<Kernel> Minangle_remesh;
 typedef PMP::internal::Minangle_remesher<Kernel> Minangle_remesher;
-typedef Minangle_remesher::Mesh_properties Mesh_properties;
+typedef Minangle_remesher::Mesh_properties_ Mesh_properties;
 typedef Minangle_remesher::Bbox Bbox;         // in Minangle_remesher
 typedef Minangle_remesher::FT FT;
 typedef Minangle_remesher::Point Point;
