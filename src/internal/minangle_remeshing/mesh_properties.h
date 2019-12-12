@@ -2708,10 +2708,10 @@ class Mesh_properties {
       Vector ab = b - a, ac = c - a;  // edge vectors
       while (samples.size() < nb_samples) {
         FT u = 0.0, v = 0.0;
-        u = random.random_value<double>(0.0, 1.0);
+        u = random.uniform_real<double>(0.0, 1.0);
         u = 0.9 * u + 0.05;
         while (v == 0.0 || u + v == 1.0) {
-          v = random.random_value<double>(0.0, 1.0);
+          v = random.uniform_real<double>(0.0, 1.0);
           v = 0.9 * v + 0.05;
         }
         if (u + v > 1.0) {    // flip over diag if needed
