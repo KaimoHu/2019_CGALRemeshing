@@ -1360,7 +1360,8 @@ class Mesh_properties {
   }
 
   // 14.2) collapse
-  bool is_collapsable(halfedge_descriptor hd) const {
+  bool is_collapsable(halfedge_descriptor hd,
+                      const NamedParameters &np) const {
     if (is_border(hd)) {
       return false;
     }
@@ -1381,6 +1382,12 @@ class Mesh_properties {
       if (is_on_boundary(get_target_vertex(hd)) &&
         is_on_boundary(get_target_vertex(ho))) {
         return false;
+      }
+      // the special case for inherit_element_types
+      if (np.inherit_element_types) {
+        if (is_crease_edge(hd)) {
+
+        }
       }
     }
     return check_link_condition(hd);   // link condition
@@ -2460,9 +2467,11 @@ class Mesh_properties {
 
   inline bool is_crease_edge(halfedge_descriptor hd) const {
     if (get_halfedge_normal_dihedral(hd) == -1.0) {
-      hd = get_opposite(hd);
+      return get_halfedge_is_crease(get_opposite(hd));
     }
-    return get_halfedge_is_crease(hd);
+    else {
+      return get_halfedge_is_crease(hd);
+    }
   }
 
   Point get_least_qem_point(halfedge_descriptor hd) const {
