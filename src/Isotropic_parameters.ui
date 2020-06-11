@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>285</width>
+    <width>465</width>
     <height>110</height>
    </rect>
   </property>
@@ -16,6 +16,9 @@
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QFormLayout" name="formLayout_3">
+     <property name="labelAlignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
      <item row="0" column="0">
       <widget class="QLabel" name="label1">
        <property name="text">

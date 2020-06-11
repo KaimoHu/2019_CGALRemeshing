@@ -1385,8 +1385,24 @@ class Mesh_properties {
       }
       // the special case for inherit_element_types
       if (np.inherit_element_types) {
+        vertex_descriptor vp = get_source_vertex(hd);
+        vertex_descriptor vq = get_target_vertex(hd);
+        Halfedge_list effective_edges;
+        VertexType vtp = get_vertex_type(vp, &effective_edges, np);
+        VertexType vtq = get_vertex_type(vq, &effective_edges, np);
         if (is_crease_edge(hd)) {
-
+          // Crease edge is not collapsable if both ends are feature vertices
+          if (vtp == VertexType::k_feature_vertex &&
+              vtq == VertexType::k_feature_vertex) {
+            return false;
+          }
+        }
+        else {
+          // Non-crease edge is collapsable if one end is smooth vertex
+          if (vtp != VertexType::k_smooth_vertex &&
+              vtq != VertexType::k_smooth_vertex) {
+            return false;
+          }
         }
       }
     }

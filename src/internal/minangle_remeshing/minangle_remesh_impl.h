@@ -540,7 +540,7 @@ class Minangle_remesher {
         // step 2: try to collapse with the constraints of max_error
         vertex_descriptor vd = collapse_applied(max_error_threshold_value,
           -1.0, true, NULL, &large_error_queue,
-          &collapse_candidate_queue, hd);
+          &collapse_candidate_queue, hd, np_);
         // step 3: update the adjacent halfedges
         if (vd != remesh_->get_null_vertex()) {
           ++nb_operations;
@@ -841,7 +841,7 @@ class Minangle_remesher {
     bool infinite_loop = false;
     vertex_descriptor vd = collapse_applied(max_error_threshold_value,
         min_radian, false, &infinite_loop, large_error_queue,
-        small_radian_queue, min_radian_halfedge);
+        small_radian_queue, min_radian_halfedge, np_);
     if (vd != remesh_->get_null_vertex()) {
       if (verbose_progress) {
         std::cout << "1 edge collapsed" << std::endl;
@@ -983,13 +983,14 @@ class Minangle_remesher {
   vertex_descriptor collapse_applied(FT max_error_threshold_value,
       FT min_radian, bool reduce_complexity, bool *infinite_loop,
       DPQueue_halfedge_long *large_error_queue,
-      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd) {
+      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd,
+      const NamedParameters &np) {
     /* if min_radian > 0, we improve min_radian;
     if infinite_loop is not NULL, we check the infinite loop case;
     if improve_min_radian, we improve the min radian; otherwise,
     we collapse to reduce the mesh complexity */
     // step 1: topology constraints check
-    if (!remesh_->is_collapsable(hd)) {
+    if (!remesh_->is_collapsable(hd, np)) {
       return remesh_->get_null_vertex();
     }
     // step 2: geometry constraints check
