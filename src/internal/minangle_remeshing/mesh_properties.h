@@ -331,7 +331,10 @@ class Mesh_properties {
     }
   }
 
-  virtual ~Mesh_properties() {}
+  virtual ~Mesh_properties() {
+    std::ifstream in;
+    
+  }
 
   // 2) elements access
   inline const Mesh& get_mesh() const { return mesh_; }
@@ -1398,7 +1401,7 @@ class Mesh_properties {
           }
         }
         else {
-          // Non-crease edge is collapsable if one end is smooth vertex
+          // Non-crease edge is collapsable only if one end is smooth vertex
           if (vtp != VertexType::k_smooth_vertex &&
               vtq != VertexType::k_smooth_vertex) {
             return false;

@@ -99,13 +99,14 @@ void MainWindow::dragEnterEvent(QDragEnterEvent *event) {
 // File menu:
 void MainWindow::on_actionFile_open_triggered() {
   QSettings settings;
-  QString directory = settings.value("OFF open directory",
+  QString directory = settings.value("Open directory",
     QDir::current().dirName()).toString();
   QStringList filenames =
     QFileDialog::getOpenFileNames(this,
     tr("Load surface mesh..."),
     directory,
     tr("OFF files (*.off)\n"
+    "PLY files (*.ply)\n"
     "All files (*)"));
   if (!filenames.isEmpty()) {
     Q_FOREACH(QString filename, filenames) {
@@ -116,13 +117,14 @@ void MainWindow::on_actionFile_open_triggered() {
 
 void MainWindow::on_actionFile_open_input_triggered() {
   QSettings settings;
-  QString directory = settings.value("OFF open directory",
+  QString directory = settings.value("Open directory",
     QDir::current().dirName()).toString();
   QStringList filenames =
     QFileDialog::getOpenFileNames(this,
     tr("Load surface mesh..."),
     directory,
     tr("OFF files (*.off)\n"
+    "PLY files (*.ply)\n"
     "All files (*)"));
   if (!filenames.isEmpty()) {
     Q_FOREACH(QString filename, filenames) {
@@ -133,13 +135,14 @@ void MainWindow::on_actionFile_open_input_triggered() {
 
 void MainWindow::on_actionFile_open_remesh_triggered() {
   QSettings settings;
-  QString directory = settings.value("OFF open directory",
+  QString directory = settings.value("Open directory",
     QDir::current().dirName()).toString();
   QStringList filenames =
     QFileDialog::getOpenFileNames(this,
     tr("Load surface mesh..."),
     directory,
     tr("OFF files (*.off)\n"
+    "PLY files (*.ply)\n"
     "All files (*)"));
   if (!filenames.isEmpty()) {
     Q_FOREACH(QString filename, filenames) {
@@ -150,7 +153,7 @@ void MainWindow::on_actionFile_open_remesh_triggered() {
 
 void MainWindow::on_actionFile_save_remesh_as_triggered() {
   QSettings settings;
-  QString directory = settings.value("OFF open directory",
+  QString directory = settings.value("Open directory",
     QDir::current().dirName()).toString();
 
   QString filters("Off files (*.off);;Mesh files (*.mesh);;All files (*.*)");
@@ -700,7 +703,7 @@ void MainWindow::open(QString file_name, OpenType open_type) {
     }
     if (suc) {
       QSettings settings;
-      settings.setValue("OFF open directory",
+      settings.setValue("Open directory",
         file_info.absoluteDir().absolutePath());
       this->addToRecentFiles(file_name);
       updateViewerBBox();
