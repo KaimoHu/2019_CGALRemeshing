@@ -331,10 +331,7 @@ class Mesh_properties {
     }
   }
 
-  virtual ~Mesh_properties() {
-    std::ifstream in;
-    
-  }
+  virtual ~Mesh_properties() {}
 
   // 2) elements access
   inline const Mesh& get_mesh() const { return mesh_; }
@@ -1061,11 +1058,48 @@ class Mesh_properties {
     }
   }
 
-  void calculate_feature_intensities(const NamedParameters &np) {
-    calculate_edge_feature_intensities(np);
-    calculate_vertex_feature_intensities(np);
-    if (np.inherit_element_types) {
-      calculate_edge_classifications(np.feature_control_delta);
+  void calculate_feature_intensities(NamedParameters *np) {
+    // step 1: calculate the edge and vertex feature intensities
+    calculate_edge_feature_intensities(*np);
+    calculate_vertex_feature_intensities(*np);
+    // step 2: update the feature edges (copy from input, or calculate)
+    Mesh::Property_map<halfedge_descriptor, bool> halfedge_are_creases;
+    bool found = false;
+    boost::tie(halfedge_are_creases, found) =
+        mesh_.property_map<halfedge_descriptor, bool>("h:crease");
+    if (found) {
+      np->inherit_element_types = true;
+      // update the halfedge_are_creases_ according to halfedge_are_creases
+      for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
+          ei != mesh_.edges().end(); ++ei) {
+        halfedge_descriptor hd = mesh_.halfedge(*ei);
+        if (get_halfedge_normal_dihedral(hd) == -1.0) {
+          hd = get_opposite(hd);
+        }
+        bool is_crease = halfedge_are_creases[hd] ||
+                         halfedge_are_creases[get_opposite(hd)];
+        if (is_crease) {
+          set_halfedge_is_crease(hd, true);
+          set_halfedge_is_crease(get_opposite(hd), false);
+        }
+      }
+    } else if (np->inherit_element_types) {
+      for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
+        vi != mesh_.vertices().end(); ++vi) {
+        Halfedge_list effective_edges;
+        collect_effective_edges_in_one_ring(np->feature_control_delta, *vi,
+                                            &effective_edges);
+        if (effective_edges.size() == 2) {
+          for (auto it = effective_edges.begin();
+            it != effective_edges.end(); ++it) {
+            halfedge_descriptor hd = *it;
+            if (get_halfedge_normal_dihedral(hd) == -1.0) {
+              hd = get_opposite(hd);
+            }
+            set_halfedge_is_crease(hd, true);
+          }
+        }
+      }
     }
   }
 
@@ -1122,7 +1156,34 @@ class Mesh_properties {
     }
   }
 
-  // 11) mesh properties
+  // 11) IO
+  void save_as(const std::string &file_name) const {
+    size_t pos = file_name.find_last_of('.');
+    if (pos == std::string::npos) {
+      std::cout << "Invalid file name." << std::endl;
+      return;
+    }
+    std::string extension = file_name.substr(pos);
+    std::transform(extension.begin(), extension.end(),
+      extension.begin(), std::tolower);
+    std::ofstream ofs(file_name);
+    if (!ofs) {
+      std::cout << "Failed to create the output file." << std::endl;
+      return;
+    }
+    if (extension == ".off") {
+      save_as_off(ofs);
+    }
+    else if (extension == ".ply") {
+      save_as_ply(ofs);
+    }
+    else {
+      std::cout << "File type not supported." << std::endl;
+    }
+    ofs.close();
+  }
+
+  // 12) mesh properties
   void trace_properties() {
     std::cout << mesh_.number_of_vertices() << " vertices" << std::endl;
     std::cout << mesh_.number_of_faces() << " faces" << std::endl;
@@ -1182,12 +1243,12 @@ class Mesh_properties {
       << min_out_link_count << std::endl;
   }
 
-  // 12) static utilities
+  // 13) static utilities
   static inline FT to_radian(FT angle) { return angle * CGAL_PI / 180.0; }
 
   static inline FT to_angle(FT radian) { return radian * 180.0 / CGAL_PI; }
 
-  // 13) input operations
+  // 14) input operations
   int eliminate_degenerated_faces() {
     FT radian_threshold = MIN_VALUE;
     // step 1: fill all the degenerated faces in the dynamic priority queue
@@ -1264,9 +1325,9 @@ class Mesh_properties {
     return nb_split;
   }
 
-  // 14) remesh operations
+  // 15) remesh operations
 
-  // 14.1) split
+  // 15.1) split
   vertex_descriptor split_edge(const Face_tree &input_face_tree,
     FT max_error_threshold_value, FT max_error, FT min_radian,
     bool reduce_complexity, DPQueue_halfedge_long *large_error_queue,
@@ -1362,7 +1423,7 @@ class Mesh_properties {
     return vd;
   }
 
-  // 14.2) collapse
+  // 15.2) collapse
   bool is_collapsable(halfedge_descriptor hd,
                       const NamedParameters &np) const {
     if (is_border(hd)) {
@@ -1723,7 +1784,7 @@ class Mesh_properties {
     return v_joined;
   }
 
-  // 14.3) flip
+  // 15.3) flip
   int flip_applied(const Face_tree &input_face_tree,
     FT max_error_threshold_value, FT max_error, FT min_radian,
     bool reduce_complexity, DPQueue_halfedge_long *large_error_queue,
@@ -1829,7 +1890,7 @@ class Mesh_properties {
     return flipped ? hd : get_null_halfedge();
   }
 
-  // 14.4) relocate
+  // 15.4) relocate
   int relocate_applied(const Face_tree &input_face_tree,
     FT max_error_threshold_value, FT max_error, FT min_radian,
     bool reduce_complexity, DPQueue_halfedge_long *large_error_queue,
@@ -4201,6 +4262,7 @@ class Mesh_properties {
     if (is_border(get_opposite(hd))) {  // ed is on the boundary
       set_halfedge_normal_dihedral(hd, np.dihedral_theta * CGAL_PI);
       set_halfedge_normal_dihedral(get_opposite(hd), -1.0);
+      set_halfedge_is_crease(hd, true);
       set_halfedge_is_crease(get_opposite(hd), false);
     } else {                            // ed is an inner edge
       FT normal_dihedral = calculate_normal_dihedral(hd);
@@ -4210,35 +4272,14 @@ class Mesh_properties {
         if (get_halfedge_normal_dihedral(hd) == -1.0) {
           set_halfedge_is_crease(hd, get_halfedge_is_crease(get_opposite(hd)));
         }
-        set_halfedge_normal_dihedral(hd, normal_dihedral);
       } else {
         if (get_halfedge_normal_dihedral(get_opposite(hd)) != -1.0) {
           hd = get_opposite(hd);
         }
-        set_halfedge_normal_dihedral(hd, normal_dihedral);
       }
+      set_halfedge_normal_dihedral(hd, normal_dihedral);
       set_halfedge_normal_dihedral(get_opposite(hd), -1.0);
       set_halfedge_is_crease(get_opposite(hd), false);
-    }
-  }
-
-  void calculate_edge_classifications(FT feature_control_delta) {
-    // precondition: edge and normal feature intensities has been computed
-    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
-      vi != mesh_.vertices().end(); ++vi) {
-      Halfedge_list effective_edges;
-      collect_effective_edges_in_one_ring(feature_control_delta, *vi,
-        &effective_edges);
-      if (effective_edges.size() == 2) {
-        for (auto it = effective_edges.begin();
-          it != effective_edges.end(); ++it) {
-          halfedge_descriptor hd = *it;
-          if (get_halfedge_normal_dihedral(hd) == -1.0) {
-            hd = get_opposite(hd);
-          }
-          set_halfedge_is_crease(hd, true);
-        }
-      }
     }
   }
 
@@ -4550,30 +4591,68 @@ class Mesh_properties {
   }
 
   // 12) IO
-  void save_as(const std::string &file_name) const {
-    size_t pos = file_name.find_last_of('.');
-    if (pos == std::string::npos) {
-      std::cout << "Invalid file name." << std::endl;
-      return;
-    }
-    std::string extension = file_name.substr(pos);
-    std::transform(extension.begin(), extension.end(),
-      extension.begin(), std::tolower);
-    if (extension == ".off") {
-      save_as_off(file_name);
-    } else {
-      std::cout << "Invalid file name." << std::endl;
-    }
-  }
-
-  void save_as_off(const std::string &file_name) const {
-    std::ofstream ofs(file_name);
-    if (!ofs) {
-      return;
-    }
+  void save_as_off(std::ofstream &ofs) const {
     CGAL::set_ascii_mode(ofs);
     bool suc = CGAL::write_off(ofs, mesh_);
-    ofs.close();
+  }
+
+  void save_as_ply(std::ofstream &ofs) const {
+    CGAL::set_ascii_mode(ofs);
+    // step 1: collect the crease edges
+    std::vector<halfedge_descriptor> crease_halfedges;
+    for (Mesh::Edge_range::const_iterator ei = mesh_.edges().begin();
+      ei != mesh_.edges().end(); ++ei) {
+      halfedge_descriptor hd = mesh_.halfedge(*ei);
+      if (get_halfedge_normal_dihedral(hd) == -1.0) {
+        hd = get_opposite(hd);
+      }
+      // by default, we do not store boudary halfedges
+      if (!is_border(get_opposite(hd)) && get_halfedge_is_crease(hd)) {
+        crease_halfedges.push_back(hd);
+      }
+    }
+    // step 2: output the ply file
+    std::map<vertex_descriptor, int> vertex_map;
+    ofs << "ply" << std::endl;
+    ofs << "format ascii 1.0" << std::endl;
+    ofs << "comment made by CGALRemeshing" << std::endl;
+    ofs << "element vertex " << mesh_.number_of_vertices() << std::endl;
+    ofs << "property float x" << std::endl;
+    ofs << "property float y" << std::endl;
+    ofs << "property float z" << std::endl;
+    ofs << "element face " << mesh_.number_of_faces() << std::endl;
+    ofs << "property list uchar int vertex_index" << std::endl;
+    if (!crease_halfedges.empty()) {
+      ofs << "element edge " << crease_halfedges.size() << std::endl;
+      ofs << "property int vertex_1" << std::endl;
+      ofs << "property int vertex_2" << std::endl;
+      ofs << "property uchar is_crease" << std::endl;
+    }
+    ofs << "end_header" << std::endl;
+    int vertex_count = 0;
+    for (Mesh::Vertex_range::const_iterator vi = mesh_.vertices().begin();
+        vi != mesh_.vertices().end(); ++vi) {
+      vertex_map[*vi] = vertex_count++;
+      const Point &p = get_point(*vi);
+      ofs << p.x() << " " << p.y() << " " << p.z() << std::endl;
+    }
+    for (Mesh::Face_range::const_iterator fi = mesh_.faces().begin();
+        fi != mesh_.faces().end(); ++fi) {
+      halfedge_descriptor hd = mesh_.halfedge(*fi);
+      vertex_descriptor vd1 = get_source_vertex(hd);
+      vertex_descriptor vd2 = get_target_vertex(hd);
+      vertex_descriptor vd3 = get_opposite_vertex(hd);
+      ofs << "3 " << vertex_map[vd1] << " " << vertex_map[vd2] << " "
+                  << vertex_map[vd3] << std::endl;
+    }
+    if (!crease_halfedges.empty()) {
+      for (auto it = crease_halfedges.begin();
+          it != crease_halfedges.end(); ++it) {
+        vertex_descriptor vd1 = get_source_vertex(*it);
+        vertex_descriptor vd2 = get_target_vertex(*it);
+        ofs << vertex_map[vd1] << " " << vertex_map[vd2] << " 1" << std::endl;
+      }
+    }
   }
 
   // 13) utilities

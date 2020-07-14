@@ -563,10 +563,8 @@ class Scene : public QObject {
   void update_bbox();
   void normalize(FT radius, Mesh *mesh) const;
   double calculate_input_edge_length() const;
-  bool open_surface_mesh(QString file_name, Mesh *mesh,
-      std::vector<halfedge_descriptor> *crease_halfedges) const;
-  bool read_ply(std::ifstream &in, Mesh *mesh, 
-      std::vector<halfedge_descriptor> *crease_halfedges) const;
+  bool open_surface_mesh(QString file_name, Mesh *mesh) const;
+  bool read_ply(std::ifstream &in, Mesh *mesh) const;
   inline const Mesh_properties* get_mesh_properties(bool is_input) const {
     const Minangle_remesher *remesher = m_minangle_remesh.get_remesher();
     return is_input ? remesher->get_input() : remesher->get_remesh();

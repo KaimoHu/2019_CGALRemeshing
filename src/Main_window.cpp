@@ -156,7 +156,7 @@ void MainWindow::on_actionFile_save_remesh_as_triggered() {
   QString directory = settings.value("Open directory",
     QDir::current().dirName()).toString();
 
-  QString filters("Off files (*.off);;Mesh files (*.mesh);;All files (*.*)");
+  QString filters("Off files (*.off);;Ply files (*.ply);;All files (*.*)");
   QString defaultFilter("Off files (*.off)");
 
   QString filename =
