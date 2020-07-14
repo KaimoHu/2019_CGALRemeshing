@@ -1,9 +1,9 @@
 #ifndef CGAL_TYPES_H
 #define CGAL_TYPES_H
 
+// CGAL
 #include <CGAL/Simple_cartesian.h>
-//#include <CGAL/IO/Color.h>
-
+// Local
 #include "Minangle_remesh.h"
 
 typedef CGAL::Color Color;
