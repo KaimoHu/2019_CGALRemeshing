@@ -45,9 +45,9 @@
 // boost
 #include <boost/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
+#include <boost/random.hpp>
 // local
 #include "Bvd.h"
-#include "Random.h"
 
 // namespace definition
 namespace PMP = CGAL::Polygon_mesh_processing;
@@ -2792,15 +2792,18 @@ class Mesh_properties {
       // step 1.1: generate the unique inner samples
       std::set<Point, Point_Comp> samples;
       // std::set<Point> samples;
-      Random random;
+      boost::random::mt19937 gen(time(NULL));
+      boost::random::uniform_01<> random;
       srand(time(NULL));
       Vector ab = b - a, ac = c - a;  // edge vectors
       while (samples.size() < nb_samples) {
         FT u = 0.0, v = 0.0;
-        u = random.uniform_real<double>(0.0, 1.0);
+        //u = random.uniform_real<double>(0.0, 1.0);
+        u = random(gen);
         u = 0.9 * u + 0.05;
         while (v == 0.0 || u + v == 1.0) {
-          v = random.uniform_real<double>(0.0, 1.0);
+          //v = random.uniform_real<double>(0.0, 1.0);
+          v = random(gen);
           v = 0.9 * v + 0.05;
         }
         if (u + v > 1.0) {    // flip over diag if needed

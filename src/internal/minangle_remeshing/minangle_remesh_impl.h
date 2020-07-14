@@ -1026,7 +1026,7 @@ class Minangle_remesher {
     Mesh local_mesh;
     vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
         extended_faces, halfedges, *new_point, is_ring, &local_mesh);
-    Mesh_properties local_mp(&local_mesh);
+    Mesh_properties_ local_mp(&local_mesh);
     NamedParameters np(np_);
     local_mp.calculate_feature_intensities(&np);
     // step 2: get the in_link_faces (for function compatability)
@@ -1063,13 +1063,7 @@ class Minangle_remesher {
   std::map<Point, std::map<FT, Visit_iter>, Point_Comp> collapsed_map_;
 
   // 3) member data and properties
-  
-  
-  
-  
-  
-  
-  _ *input_, *remesh_;
+  Mesh_properties_ *input_, *remesh_;
   Face_tree input_face_tree_, remesh_face_tree_;
   Bbox input_bbox;
 
