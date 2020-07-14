@@ -102,8 +102,8 @@ class MinAngleParameters : public QDialog, private Ui_MinAngleParametersDialog {
   bool get_decrease_max_errors() const { return cb_decrease_max_errors->isChecked(); }
   void set_decrease_max_errors(bool value) { cb_decrease_max_errors->setChecked(value); }
 
-  bool get_track_information() const { return cb_track_information->isChecked(); }
-  void set_track_information(bool value) { cb_track_information->setChecked(value); }
+  bool get_verbose_progress() const { return cb_verbose_progress->isChecked(); }
+  void set_verbose_progress(bool value) { cb_verbose_progress->setChecked(value); }
 
   bool get_apply_initial_mesh_simplification() const { return cb_apply_initial_mesh_simplification->isChecked(); }
   void set_apply_initial_mesh_simplification(bool value) { cb_apply_initial_mesh_simplification->setChecked(value); }

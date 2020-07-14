@@ -356,19 +356,11 @@ class Minangle_remesher {
     remesh_ = NULL;
   }
   void save_remesh_as(const std::string &file_name) const {
-    size_t pos = file_name.find_last_of('.');
-    if (pos == std::string::npos) {
-      std::cout << "Invalid file name" << std::endl;
+    if (remesh_ == NULL) {
+      std::cout << "Please set the remesh first" << std::endl;
       return;
     }
-    std::string extension = file_name.substr(pos);
-    std::transform(extension.begin(), extension.end(),
-      extension.begin(), [](unsigned char c){ return std::tolower(c); });
-    if (extension == ".off") {
-      save_as_off(file_name);
-    } else {
-      std::cout << "Invalid file type" << std::endl;
-    }
+    remesh_->save_as(file_name);
   }
 
   // 4) mesh properties
@@ -409,7 +401,7 @@ class Minangle_remesher {
       if (verbose_progress) {
         std::cout << "Computing input feature intensities...";
       }
-      input_->calculate_feature_intensities(np_);
+      input_->calculate_feature_intensities(&np_);
       if (verbose_progress) {
         std::cout << "Done" << std::endl;
       }
@@ -418,7 +410,7 @@ class Minangle_remesher {
       if (verbose_progress) {
         std::cout << "Computing remesh feature intensities...";
       }
-      remesh_->calculate_feature_intensities(np_);
+      remesh_->calculate_feature_intensities(&np_);
       if (verbose_progress) {
         std::cout << "Done" << std::endl;
       }
@@ -540,7 +532,7 @@ class Minangle_remesher {
         // step 2: try to collapse with the constraints of max_error
         vertex_descriptor vd = collapse_applied(max_error_threshold_value,
           -1.0, true, NULL, &large_error_queue,
-          &collapse_candidate_queue, hd);
+          &collapse_candidate_queue, hd, np_);
         // step 3: update the adjacent halfedges
         if (vd != remesh_->get_null_vertex()) {
           ++nb_operations;
@@ -795,26 +787,7 @@ class Minangle_remesher {
     std::cout << "done (" << timer.time() << " s)" << std::endl;
   }
 
-  // 3) IO
-  void save_as_off(const std::string &file_name) const {
-    if (remesh_ == NULL) {
-      std::cout << "Please set the remesh first" << std::endl;
-      return;
-    }
-    std::ofstream ofs(file_name);
-    if (!ofs) {
-      std::cout << "Failed to create the file" << std::endl;
-      return;
-    }
-    const Mesh &mesh = remesh_->get_mesh();
-    bool ret = write_off(ofs, mesh);
-    if (!ret) {
-      std::cout << "Failed to save the remesh" << std::endl;
-    }
-    ofs.close();
-  }
-
-  // 4) sample and links
+  // 3) sample and links
   void clear_links() {
     // step 1: clear the out links
     remesh_->clear_out_links();
@@ -826,7 +799,7 @@ class Minangle_remesher {
     collapsed_map_.clear();
   }
 
-  // 5) manipulations
+  // 4) manipulations
   void greedy_improve_angle(FT max_error_threshold_value, FT min_radian,
       bool verbose_progress, DPQueue_halfedge_long *large_error_queue,
       DPQueue_halfedge_short *small_radian_queue,
@@ -841,7 +814,7 @@ class Minangle_remesher {
     bool infinite_loop = false;
     vertex_descriptor vd = collapse_applied(max_error_threshold_value,
         min_radian, false, &infinite_loop, large_error_queue,
-        small_radian_queue, min_radian_halfedge);
+        small_radian_queue, min_radian_halfedge, np_);
     if (vd != remesh_->get_null_vertex()) {
       if (verbose_progress) {
         std::cout << "1 edge collapsed" << std::endl;
@@ -979,17 +952,18 @@ class Minangle_remesher {
     }
   }
 
-  // 6) collapse
+  // 5) collapse
   vertex_descriptor collapse_applied(FT max_error_threshold_value,
       FT min_radian, bool reduce_complexity, bool *infinite_loop,
       DPQueue_halfedge_long *large_error_queue,
-      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd) {
+      DPQueue_halfedge_short *small_value_queue, halfedge_descriptor hd,
+      const NamedParameters &np) {
     /* if min_radian > 0, we improve min_radian;
     if infinite_loop is not NULL, we check the infinite loop case;
     if improve_min_radian, we improve the min radian; otherwise,
     we collapse to reduce the mesh complexity */
     // step 1: topology constraints check
-    if (!remesh_->is_collapsable(hd)) {
+    if (!remesh_->is_collapsable(hd, np)) {
       return remesh_->get_null_vertex();
     }
     // step 2: geometry constraints check
@@ -1052,8 +1026,9 @@ class Minangle_remesher {
     Mesh local_mesh;
     vertex_descriptor local_vd = remesh_->construct_local_mesh(one_ring_faces,
         extended_faces, halfedges, *new_point, is_ring, &local_mesh);
-    Mesh_properties_ local_mp(&local_mesh);
-    local_mp.calculate_feature_intensities(np_);
+    Mesh_properties local_mp(&local_mesh);
+    NamedParameters np(np_);
+    local_mp.calculate_feature_intensities(&np);
     // step 2: get the in_link_faces (for function compatability)
     std::set<face_descriptor> in_link_faces;
     local_mp.collect_all_faces(&in_link_faces);
@@ -1072,7 +1047,7 @@ class Minangle_remesher {
     *new_point = local_mesh.point(local_vd);
   }
 
-  // 7) utilities
+  // 6) utilities
   inline FT to_approximation(FT value) const {
     FT precison = MAX_VALUE;
     int temp_value = value * precison;
@@ -1088,7 +1063,13 @@ class Minangle_remesher {
   std::map<Point, std::map<FT, Visit_iter>, Point_Comp> collapsed_map_;
 
   // 3) member data and properties
-  Mesh_properties_ *input_, *remesh_;
+  
+  
+  
+  
+  
+  
+  _ *input_, *remesh_;
   Face_tree input_face_tree_, remesh_face_tree_;
   Bbox input_bbox;
 

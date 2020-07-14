@@ -5,7 +5,9 @@
 //#include <QOpenGLShader>
 //#include <QDebug>
 //#include <CGAL/Polygon_mesh_processing/border.h>
+//#include <CGAL/IO/PLY_reader.h>
 #include <CGAL/Polygon_mesh_processing/remesh.h>
+#include <boost/algorithm/string.hpp>
 
 Scene::Scene() 
   : m_frame(new ManipulatedFrame()), 
@@ -2187,7 +2189,192 @@ Color Scene::get_rgb_color(FT h, FT s, FT v) const {
   }
 }
 
-bool Scene::open(QString file_name) {
+bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
+  /* Now we only support the ply file based on ASCII code
+     Now we only support the triangles (no quad), and vertex_indices should be the 1st property
+     Now we only support all properties for one element is in one line
+  */
+  // precondition: in is valid
+  std::set<halfedge_descriptor> crease_halfedges;
+  std::string line;
+  std::vector<std::string> tokens;
+  // step 1: read the head
+  std::getline(in, line);     // "ply"
+  std::getline(in, line);     // "format ascii 1.0"
+  boost::split(tokens, line, boost::is_any_of(" "));
+  if (tokens[1] != "ascii") {
+    return false;             // not in ASCII format
+  }
+  std::vector<std::pair<std::string, int>> element_types;   // type_name, type_count
+  std::vector<std::vector<std::vector<std::string>>> element_properties; // count, type, name
+  while (!in.eof()) {
+    std::getline(in, line);
+    boost::trim(line);
+    if (line.length() == 0) {
+      continue;
+    }
+    boost::split(tokens, line, boost::is_any_of(" "));
+    if (tokens[0] == "comment") {
+      continue;
+    } else if (tokens[0] == "element") {
+      // try to extract vertex, face and edge information
+      element_types.push_back(std::make_pair(tokens[1], std::stoi(tokens[2])));
+      element_properties.push_back({});
+    } else if (tokens[0] == "end_header") {
+      break;
+    } else if (tokens[0] == "property") {
+      std::vector<std::string> element_property;
+      if (tokens[1] == "list") {  // property is a list
+        element_property.push_back("4");
+        element_property.push_back(tokens[3]);    // property data type
+        element_property.push_back(tokens[4]);    // property name
+      }
+      else {                      // property is a scaler
+        element_property.push_back("1");          // property count
+        element_property.push_back(tokens[1]);    // property data type
+        element_property.push_back(tokens[2]);    // property name
+      }
+      element_properties.back().push_back(element_property);
+    }
+  }
+  // step 2: read the data
+  std::vector<vertex_descriptor> vertex_descriptors;
+  for (int i = 0; i < element_types.size(); ++i) {
+    if (element_types[i].first == "vertex") {
+      // extract the index of x, y and z
+      int x_index = -1, y_index = -1, z_index = -1;
+      int index = 0;
+      for (int j = 0; j < element_properties[i].size(); ++j) {
+        if (element_properties[i][j][2] == "x") {
+          x_index = index;
+        }
+        else if (element_properties[i][j][2] == "y") {
+          y_index = index;
+        }
+        else if (element_properties[i][j][2] == "z") {
+          z_index = index;
+        }
+        index += std::stoi(element_properties[i][j][0]);
+      }
+      // read the data, construct and add the vertex
+      for (int j = 0; j < element_types[i].second; ++j) {
+        std::getline(in, line);
+        boost::trim(line);
+        boost::split(tokens, line, boost::is_any_of(" "));
+        Point p(std::stod(tokens[x_index]),
+                std::stod(tokens[y_index]), 
+                std::stod(tokens[z_index]));
+        vertex_descriptor vd = mesh->add_vertex(p);
+        vertex_descriptors.push_back(vd);
+      }
+    }
+    else if (element_types[i].first == "face") {
+      // extract the index of vertex_index
+      int vertex_index = -1;
+      int index = 0;
+      for (int j = 0; j < element_properties[i].size(); ++j) {
+        if (element_properties[i][j][2] == "vertex_index" ||
+            element_properties[i][j][2] == "vertex_indices") {
+          vertex_index = index;
+          break;
+        }
+        index += std::stoi(element_properties[i][j][0]);
+      }
+      // read the data, construct and add the face
+      for (int j = 0; j < element_types[i].second; ++j) {
+        std::getline(in, line);
+        boost::trim(line);
+        boost::split(tokens, line, boost::is_any_of(" "));
+        int vertice_count = std::stoi(tokens[vertex_index]);
+        if (vertice_count != 3) { // we only prcess triangles here
+          return false;
+        }
+        int index1 = std::stoi(tokens[vertex_index + 1]);
+        int index2 = std::stoi(tokens[vertex_index + 2]);
+        int index3 = std::stoi(tokens[vertex_index + 3]);
+        mesh->add_face(vertex_descriptors[index1],
+                       vertex_descriptors[index2], 
+                       vertex_descriptors[index3]);
+      }
+    }
+    else if (element_types[i].first == "edge") {
+      // extract the index of vertex1, vertex2 and is_crease
+      int vertex1_index = -1, vertex2_index = -1, is_crease_index = -1;
+      int index = 0;
+      for (int j = 0; j < element_properties[i].size(); ++j) {
+        if (element_properties[i][j][2] == "vertex_1") {
+          vertex1_index = index;
+        }
+        else if (element_properties[i][j][2] == "vertex_2") {
+          vertex2_index = index;
+        }
+        else if (element_properties[i][j][2] == "is_crease") {
+          is_crease_index = index;
+        }
+        index += std::stoi(element_properties[i][j][0]);
+      }
+      // read the data, add the crease edges to crease_halfedges
+      for (int j = 0; j < element_types[i].second; ++j) {
+        std::getline(in, line);
+        boost::trim(line);
+        boost::split(tokens, line, boost::is_any_of(" "));
+        int v1_index = std::stoi(tokens[vertex1_index]);
+        int v2_index = std::stoi(tokens[vertex2_index]);
+        int is_crease = std::stoi(tokens[is_crease_index]);
+        if (is_crease != 0) {
+          vertex_descriptor vd1 = vertex_descriptors[v1_index];
+          vertex_descriptor vd2 = vertex_descriptors[v2_index];
+          Halfedge_around_target_circulator hb(mesh->halfedge(vd2), *mesh);
+          Halfedge_around_target_circulator he(hb);
+          do {
+            if (mesh->source(*hb) == vd1) {
+              crease_halfedges.insert(*hb);
+              break;
+            }
+            ++hb;
+          } while (hb != he);
+        }
+      }
+    }
+  }
+  // step 3: add the feature halfedge property if necessary
+  if (!crease_halfedges.empty()) {
+    Mesh::Property_map<halfedge_descriptor, bool> halfedge_are_creases;
+    bool created;
+    boost::tie(halfedge_are_creases, created) =
+        mesh->add_property_map<halfedge_descriptor, bool>("h:crease", false);
+    assert(created);
+    for (Mesh::Edge_range::const_iterator ei = mesh->edges().begin();
+        ei != mesh->edges().end(); ++ei) {
+      halfedge_descriptor hd = mesh->halfedge(*ei);
+      if (!mesh->is_border(hd)) {
+        hd = mesh->opposite(hd);
+      }
+      if (mesh->is_border(hd)) {    // ei is a boundary edge
+        // add the boundary halfedge as crease automatically
+        halfedge_are_creases[hd] = false;
+        halfedge_are_creases[mesh->opposite(hd)] = true;
+      } else {                      // ei is an inner edge
+        // add the specified halfege as crease if found in crease_halfedges
+        auto it = crease_halfedges.find(hd);
+        if (it == crease_halfedges.end()) {
+          hd = mesh->opposite(hd);
+          it = crease_halfedges.find(hd);
+        }
+        if (it != crease_halfedges.end()) {
+          halfedge_are_creases[hd] = true;
+          halfedge_are_creases[mesh->opposite(hd)] = false;
+        }
+      }
+    }
+  }
+  return true;
+  // TODO: understand what the function "add_property_map" does.
+  //mesh->add_property_map();
+  // please refer to https://doc.cgal.org/latest/Surface_mesh/index.html
+}
+
+bool Scene::open_surface_mesh(QString file_name, Mesh *mesh) const {
   QTextStream cerr(stderr);
   cerr << QString("\nOpening file \"%1\"\n").arg(file_name);
   cerr.flush();
@@ -2199,6 +2386,40 @@ bool Scene::open(QString file_name) {
     return false;
   }
 
+  if (file_name.endsWith(".off", Qt::CaseInsensitive)) {
+    in >> *mesh;
+    if (!in) {
+      std::cerr << "invalid OFF file" << std::endl;
+      return false;
+    }
+    in.close();
+  }
+  else if (file_name.endsWith(".ply", Qt::CaseInsensitive)) {
+    // read the ply file, and store the crease edges in property map "h:crease"
+    bool suc = read_ply(in, mesh);
+    in.close();
+    if (!suc) {
+      std::cerr << "invalid PLY file" << std::endl;
+      return false;
+    }
+  }
+  else {
+    std::cerr << "file format not supported" << std::endl;
+    in.close();
+    return false;
+  }
+  return true;
+}
+
+bool Scene::open(QString file_name) {
+  // step 1: open the file, construct the mesh and crease halfedges
+  Mesh *mesh = new Mesh();
+  bool suc = open_surface_mesh(file_name, mesh);
+  if (!suc) {
+    delete mesh;
+    return false;
+  }
+  // step 2: set the m_pInput and m_pRemesh
   if (m_pInput != NULL) {
     m_minangle_remesh.delete_input();
     delete m_pInput;
@@ -2207,16 +2428,7 @@ bool Scene::open(QString file_name) {
     m_minangle_remesh.delete_remesh();
     delete m_pRemesh;
   }
-  m_pInput = new Mesh();
-  in >> *m_pInput;
-  if (!in) {
-    std::cerr << "invalid OFF file" << std::endl;
-    delete m_pInput;
-    m_pInput = NULL;
-    m_pRemesh = NULL;
-    return false;
-  }
-  in.close();
+  m_pInput = mesh;
   normalize(1.0, m_pInput);
   m_minangle_remesh.set_input(m_pInput, true);
   m_target_edge_length = calculate_input_edge_length();
@@ -2232,30 +2444,19 @@ bool Scene::open(QString file_name) {
 }
 
 bool Scene::open_input(QString file_name) {
-  QTextStream cerr(stderr);
-  cerr << QString("\nOpening input file \"%1\"\n").arg(file_name);
-  cerr.flush();
-
-  QFileInfo fileinfo(file_name);
-  std::ifstream in(file_name.toUtf8());
-  if (!in || !fileinfo.isFile() || !fileinfo.isReadable()) {
-    std::cerr << "unable to open input file" << std::endl;
+  // step 1: open the file, construct the mesh and crease halfedges
+  Mesh *mesh = new Mesh();
+  bool suc = open_surface_mesh(file_name, mesh);
+  if (!suc) {
+    delete mesh;
     return false;
   }
-
+  // step 2: set the m_pInput, and m_pRemesh if necessary
   if (m_pInput != NULL) {
     m_minangle_remesh.delete_input();
     delete m_pInput;
   }
-  m_pInput = new Mesh();
-  in >> *m_pInput;
-  if (!in) {
-    std::cerr << "invalid OFF file" << std::endl;
-    delete m_pInput;
-    m_pInput = NULL;
-    return false;
-  }
-  in.close();
+  m_pInput = mesh;
   normalize(1.0, m_pInput);
   m_minangle_remesh.set_input(m_pInput, true);
   m_target_edge_length = calculate_input_edge_length();
@@ -2273,31 +2474,19 @@ bool Scene::open_input(QString file_name) {
 }
 
 bool Scene::open_remesh(QString file_name) {
-  QTextStream cerr(stderr);
-  cerr << QString("\nOpening remesh file \"%1\"\n").arg(file_name);
-  cerr.flush();
-
-  QFileInfo fileinfo(file_name);
-  std::ifstream in(file_name.toUtf8());
-  if (!in || !fileinfo.isFile() || !fileinfo.isReadable()) {
-    std::cerr << "unable to open remesh file" << std::endl;
+  // step 1: open the file, construct the mesh and crease_halfedges
+  Mesh *mesh = new Mesh();
+  bool suc = open_surface_mesh(file_name, mesh);
+  if (!suc) {
+    delete mesh;
     return false;
   }
-
+  // step 2: set the m_pRemesh, and m_pInput if necessary
   if (m_pRemesh != NULL) {
     m_minangle_remesh.delete_remesh();
     delete m_pRemesh;
   }
-  m_pRemesh = new Mesh();
-  in >> *m_pRemesh;
-  if (!in) {
-    std::cerr << "invalid OFF file" << std::endl;
-    delete m_pRemesh;
-    m_pRemesh = NULL;
-    return false;
-  }
-  in.close();
-
+  m_pRemesh = mesh;
   if (m_pInput == NULL) {
     normalize(1.0, m_pRemesh);
     m_pInput = new Mesh(*m_pRemesh);

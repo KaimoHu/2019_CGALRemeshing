@@ -159,11 +159,11 @@ class Scene : public QObject {
     m_minangle_remesh.get_remesher()->set_decrease_max_errors(value);
   }
 
-  bool get_track_information() const {
+  bool get_verbose_progress() const {
     return m_minangle_remesh.get_remesher()->get_verbose_progress();
   }
 
-  void set_track_information(bool value) {
+  void set_verbose_progress(bool value) {
     m_minangle_remesh.get_remesher()->set_verbose_progress(value);
   }
 
@@ -449,7 +449,7 @@ class Scene : public QObject {
   OptimizeType get_optimize_type(int index) const;
 
  private:
-   // 1) for renderring
+   // 1) for rendering
   void compile_shaders();
   void attrib_buffers(CGAL::QGLViewer*);
   void initialize_buffers();                      // initialize buffers
@@ -560,10 +560,11 @@ class Scene : public QObject {
   
   // 2) opeartions
   void reset();         // reset from input
-  void generate();      // generate links
   void update_bbox();
   void normalize(FT radius, Mesh *mesh) const;
   double calculate_input_edge_length() const;
+  bool open_surface_mesh(QString file_name, Mesh *mesh) const;
+  bool read_ply(std::ifstream &in, Mesh *mesh) const;
   inline const Mesh_properties* get_mesh_properties(bool is_input) const {
     const Minangle_remesher *remesher = m_minangle_remesh.get_remesher();
     return is_input ? remesher->get_input() : remesher->get_remesh();
