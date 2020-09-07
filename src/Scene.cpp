@@ -2190,14 +2190,17 @@ Color Scene::get_rgb_color(FT h, FT s, FT v) const {
 }
 
 bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
-  /* Now we only support the ply file based on ASCII code
-     Now we only support the triangles (no quad), and vertex_indices should be the 1st property
-     Now we only support all properties for one element is in one line
+  /* Now we only support:
+     the ply file based on ASCII code
+     the triangles (no quad), and vertex_indices should be the 1st property
+     all properties for one element is in one line
   */
   // precondition: in is valid
+
   std::set<halfedge_descriptor> crease_halfedges;
   std::string line;
   std::vector<std::string> tokens;
+
   // step 1: read the head
   std::getline(in, line);     // "ply"
   std::getline(in, line);     // "format ascii 1.0"
@@ -2205,8 +2208,10 @@ bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
   if (tokens[1] != "ascii") {
     return false;             // not in ASCII format
   }
-  std::vector<std::pair<std::string, int>> element_types;   // type_name, type_count
-  std::vector<std::vector<std::vector<std::string>>> element_properties; // count, type, name
+  // type_name, type_count. e.g., vertex -> 8, face -> 7, edge -> 5
+  std::vector<std::pair<std::string, int>> element_types;
+  // count, type, name. for a scaler, count == 1; for a list, count = 4
+  std::vector<std::vector<std::vector<std::string>>> element_properties;
   while (!in.eof()) {
     std::getline(in, line);
     boost::trim(line);
@@ -2237,6 +2242,7 @@ bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
       element_properties.back().push_back(element_property);
     }
   }
+
   // step 2: read the data
   std::vector<vertex_descriptor> vertex_descriptors;
   for (int i = 0; i < element_types.size(); ++i) {
@@ -2262,7 +2268,7 @@ bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
         boost::trim(line);
         boost::split(tokens, line, boost::is_any_of(" "));
         Point p(std::stod(tokens[x_index]),
-                std::stod(tokens[y_index]), 
+                std::stod(tokens[y_index]),
                 std::stod(tokens[z_index]));
         vertex_descriptor vd = mesh->add_vertex(p);
         vertex_descriptors.push_back(vd);
@@ -2337,6 +2343,7 @@ bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
       }
     }
   }
+
   // step 3: add the feature halfedge property if necessary
   if (!crease_halfedges.empty()) {
     Mesh::Property_map<halfedge_descriptor, bool> halfedge_are_creases;
@@ -2350,14 +2357,14 @@ bool Scene::read_ply(std::ifstream &in, Mesh *mesh) const {
       if (!mesh->is_border(hd)) {
         hd = mesh->opposite(hd);
       }
-      if (mesh->is_border(hd)) {    // ei is a boundary edge
+      if (mesh->is_border(hd)) {  // ei is a boundary edge (add automatically)
         // add the boundary halfedge as crease automatically
         halfedge_are_creases[hd] = false;
         halfedge_are_creases[mesh->opposite(hd)] = true;
-      } else {                      // ei is an inner edge
+      } else {                    // ei is an inner edge (check in the set)
         // add the specified halfege as crease if found in crease_halfedges
         auto it = crease_halfedges.find(hd);
-        if (it == crease_halfedges.end()) {
+        if (it == crease_halfedges.end()) { // its opposite is recorded
           hd = mesh->opposite(hd);
           it = crease_halfedges.find(hd);
         }

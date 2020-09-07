@@ -1167,7 +1167,9 @@ class Mesh_properties {
     }
     std::string extension = file_name.substr(pos);
     std::transform(extension.begin(), extension.end(),
-      extension.begin(), std::tolower);
+      extension.begin(), [](unsigned char c) {
+        return std::tolower(c);
+      });
     std::ofstream ofs(file_name);
     if (!ofs) {
       std::cout << "Failed to create the output file." << std::endl;
